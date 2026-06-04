@@ -1,6 +1,7 @@
-#include <iostream>
+#include "app/AppController.hpp"
 
 int main() {
-    std::cout << "CCamera face recognition scaffold is ready.\n";
-    return 0;
+    ccamera::AppConfig config;
+    ccamera::AppController app(config);
+    return app.run();
 }

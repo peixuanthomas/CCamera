@@ -1679,7 +1679,7 @@ git commit -m "feat: add ONNX Runtime CPU inference engine"
 - Create: `src/app/AppController.cpp`
 - Modify: `src/main.cpp`
 
-- [ ] **Step 1: Implement camera capture**
+- [x] **Step 1: Implement camera capture**
 
 Create `src/camera/CameraCapture.hpp`:
 
@@ -1775,7 +1775,7 @@ void CameraCapture::run() {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 2: Implement app controller vertical slice**
+- [x] **Step 2: Implement app controller vertical slice**
 
 Create `src/app/AppController.hpp`:
 
@@ -1840,7 +1840,7 @@ int AppController::run() {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 3: Wire main to app controller**
+- [x] **Step 3: Wire main to app controller**
 
 Replace `src/main.cpp`:
 
@@ -1854,7 +1854,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 4: Register app and camera files**
+- [x] **Step 4: Register app and camera files**
 
 Modify `CMakeLists.txt`:
 
@@ -1885,7 +1885,9 @@ An OpenCV window opens and shows the live camera feed.
 Press Q or Esc to quit.
 ```
 
-- [ ] **Step 6: Commit camera vertical slice**
+- [x] **Step 6: Commit camera vertical slice**
+
+Progress note 2026-06-04: Task 7 implementation, spec review, and code-quality review completed. `CameraCapture` now reads frames on a background thread, publishes latest frames through `FrameBuffer`, and `AppController` shows the live preview until `Q`/`Esc`. Fresh automated verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 5/5 tests passed. Manual camera preview was not run, so Task 7 Step 5 remains unchecked and must be treated as MANUAL/NOT RUN rather than passed.
 
 Run:
 

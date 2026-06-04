@@ -33,6 +33,8 @@ add_library(ccamera_core
 )
 
 target_sources(ccamera_core PRIVATE
+    src/app/AppController.cpp
+    src/camera/CameraCapture.cpp
     src/camera/FrameBuffer.cpp
     src/face/FaceAligner.cpp
     src/face/FaceDatabase.cpp
@@ -53,6 +55,10 @@ target_link_libraries(ccamera_core PUBLIC
 
 target_link_libraries(ccamera_core PUBLIC
     opencv_imgproc
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    opencv_videoio
 )
 
 target_link_libraries(ccamera_core PUBLIC
