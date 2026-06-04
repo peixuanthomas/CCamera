@@ -33,6 +33,7 @@ add_library(ccamera_core
 )
 
 target_sources(ccamera_core PRIVATE
+    src/camera/FrameBuffer.cpp
     src/face/FaceDatabase.cpp
     src/face/Recognizer.cpp
 )
@@ -73,4 +74,13 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_face_database tests/test_face_database.cpp)
     target_link_libraries(test_face_database PRIVATE ccamera_core)
     add_test(NAME test_face_database COMMAND test_face_database)
+
+    add_executable(test_frame_buffer tests/test_frame_buffer.cpp)
+    target_link_libraries(test_frame_buffer PRIVATE ccamera_core)
+    add_test(
+        NAME test_frame_buffer
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_frame_buffer>
+    )
 endif()

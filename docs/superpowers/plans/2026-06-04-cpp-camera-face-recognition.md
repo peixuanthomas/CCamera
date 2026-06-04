@@ -825,7 +825,7 @@ git commit -m "feat: add face database and recognizer"
 - Create: `src/camera/FrameBuffer.cpp`
 - Create: `tests/test_frame_buffer.cpp`
 
-- [ ] **Step 1: Add failing frame buffer test**
+- [x] **Step 1: Add failing frame buffer test**
 
 Create `tests/test_frame_buffer.cpp`:
 
@@ -859,7 +859,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 2: Register frame buffer code and test**
+- [x] **Step 2: Register frame buffer code and test**
 
 Modify `CMakeLists.txt`:
 
@@ -873,7 +873,7 @@ target_link_libraries(test_frame_buffer PRIVATE ccamera_core)
 add_test(NAME test_frame_buffer COMMAND test_frame_buffer)
 ```
 
-- [ ] **Step 3: Run build and verify missing header failure**
+- [x] **Step 3: Run build and verify missing header failure**
 
 Run:
 
@@ -887,7 +887,7 @@ Expected:
 Cannot open include file: 'camera/FrameBuffer.hpp'
 ```
 
-- [ ] **Step 4: Implement frame buffer**
+- [x] **Step 4: Implement frame buffer**
 
 Create `src/camera/FrameBuffer.hpp`:
 
@@ -940,7 +940,7 @@ std::optional<Frame> FrameBuffer::latest() const {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run:
 
@@ -955,7 +955,9 @@ Expected:
 100% tests passed
 ```
 
-- [ ] **Step 6: Commit frame buffer**
+Progress note 2026-06-04: Task 3 implementation, spec review, and code-quality review completed. `cmake --build build --config Debug` built `ccamera_core`, `ccamera`, `test_recognizer`, `test_face_database`, and `test_frame_buffer`; `ctest --test-dir build -C Debug --output-on-failure` reported 3/3 tests passed. No manual camera/model checks were run. `test_frame_buffer` is registered through `cmake -E env` with the project-local MSYS2 runtime bin directory on `PATH` so OpenCV runtime DLLs load during CTest.
+
+- [x] **Step 6: Commit frame buffer**
 
 Run:
 
