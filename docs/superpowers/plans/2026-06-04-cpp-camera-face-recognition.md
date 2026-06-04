@@ -438,7 +438,7 @@ git commit -m "feat: scaffold C++ face recognition project"
 - Create: `tests/test_recognizer.cpp`
 - Create: `tests/test_face_database.cpp`
 
-- [ ] **Step 1: Add failing recognizer test**
+- [x] **Step 1: Add failing recognizer test**
 
 Create `tests/test_recognizer.cpp`:
 
@@ -470,7 +470,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 2: Add failing database test**
+- [x] **Step 2: Add failing database test**
 
 Create `tests/test_face_database.cpp`:
 
@@ -508,7 +508,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 3: Register tests before implementation**
+- [x] **Step 3: Register tests before implementation**
 
 Modify `CMakeLists.txt` by adding these blocks after `add_library(ccamera_core ...)` source list is expanded:
 
@@ -535,7 +535,7 @@ target_link_libraries(test_face_database PRIVATE ccamera_core)
 add_test(NAME test_face_database COMMAND test_face_database)
 ```
 
-- [ ] **Step 4: Run tests and verify compile fails**
+- [x] **Step 4: Run tests and verify compile fails**
 
 Run:
 
@@ -549,7 +549,7 @@ Expected:
 Cannot open include file: 'face/Recognizer.hpp'
 ```
 
-- [ ] **Step 5: Implement face database interface**
+- [x] **Step 5: Implement face database interface**
 
 Create `src/face/FaceDatabase.hpp`:
 
@@ -594,7 +594,7 @@ private:
 }  // namespace ccamera
 ```
 
-- [ ] **Step 6: Implement face database storage**
+- [x] **Step 6: Implement face database storage**
 
 Create `src/face/FaceDatabase.cpp`:
 
@@ -719,7 +719,7 @@ FaceDatabaseSnapshot FaceDatabase::snapshot() const {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 7: Implement recognizer**
+- [x] **Step 7: Implement recognizer**
 
 Create `src/face/Recognizer.hpp`:
 
@@ -789,7 +789,7 @@ MatchResult Recognizer::match(const FaceEmbedding& embedding, const FaceDatabase
 }  // namespace ccamera
 ```
 
-- [ ] **Step 8: Run tests**
+- [x] **Step 8: Run tests**
 
 Run:
 
@@ -804,7 +804,9 @@ Expected:
 100% tests passed
 ```
 
-- [ ] **Step 9: Commit recognizer and database**
+Progress note 2026-06-04: Task 2 implementation, spec review, and code-quality review completed. `cmake --build build --config Debug` built `ccamera_core`, `ccamera`, `test_recognizer`, and `test_face_database`; `ctest --test-dir build -C Debug --output-on-failure` reported 2/2 tests passed. No manual camera/model checks were run.
+
+- [x] **Step 9: Commit recognizer and database**
 
 Run:
 

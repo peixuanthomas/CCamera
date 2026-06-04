@@ -32,12 +32,21 @@ add_library(ccamera_core
     src/core/Math.cpp
 )
 
+target_sources(ccamera_core PRIVATE
+    src/face/FaceDatabase.cpp
+    src/face/Recognizer.cpp
+)
+
 target_include_directories(ccamera_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(ccamera_core PUBLIC
     opencv_core
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    nlohmann_json::nlohmann_json
 )
 
 add_executable(ccamera
@@ -56,4 +65,12 @@ target_link_libraries(ccamera PRIVATE
 
 if (CCAMERA_BUILD_TESTS)
     enable_testing()
+
+    add_executable(test_recognizer tests/test_recognizer.cpp)
+    target_link_libraries(test_recognizer PRIVATE ccamera_core)
+    add_test(NAME test_recognizer COMMAND test_recognizer)
+
+    add_executable(test_face_database tests/test_face_database.cpp)
+    target_link_libraries(test_face_database PRIVATE ccamera_core)
+    add_test(NAME test_face_database COMMAND test_face_database)
 endif()
