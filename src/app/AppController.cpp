@@ -5,11 +5,49 @@
 
 #include <opencv2/highgui.hpp>
 
+#include <chrono>
+#include <exception>
 #include <utility>
 
 namespace ccamera {
 
-AppController::AppController(AppConfig config) : config_(std::move(config)) {}
+AppController::AppController(AppConfig config)
+    : config_(std::move(config)),
+      detector_engine_(config_.detector_model),
+      recognizer_engine_(config_.recognizer_model),
+      detector_(detector_engine_, config_.detection_threshold),
+      aligner_(),
+      extractor_(recognizer_engine_),
+      database_(config_.database_path),
+      recognizer_(config_.recognition_threshold) {
+    database_.load_or_create();
+}
+
+std::vector<RecognitionResult> AppController::process_frame(const cv::Mat& image) {
+    std::vector<RecognitionResult> results;
+    const auto faces = detector_.detect(image);
+    const auto db_snapshot = database_.snapshot();
+
+    for (const auto& face : faces) {
+        RecognitionResult result;
+        result.detection = face;
+        try {
+            const cv::Mat aligned = aligner_.align(image, face);
+            const FaceEmbedding embedding = extractor_.extract(aligned);
+            const MatchResult match = recognizer_.match(embedding, db_snapshot);
+            result.label = match.label;
+            result.similarity = match.similarity;
+            result.known = match.known;
+        } catch (const std::exception&) {
+            result.label = "Invalid face";
+            result.similarity = 0.0f;
+            result.known = false;
+        }
+        results.push_back(std::move(result));
+    }
+
+    return results;
+}
 
 int AppController::run() {
     CameraCapture camera(config_, frame_buffer_);
@@ -18,10 +56,21 @@ int AppController::run() {
     camera.start();
 
     bool running = true;
+    auto last_tick = Clock::now();
+    double fps = 0.0;
+
     while (running) {
         const auto frame = frame_buffer_.latest();
         if (frame.has_value()) {
-            preview.show(frame->image, {}, 0.0);
+            const auto now = Clock::now();
+            const double seconds = std::chrono::duration<double>(now - last_tick).count();
+            if (seconds > 0.0) {
+                fps = 1.0 / seconds;
+            }
+            last_tick = now;
+
+            const auto results = process_frame(frame->image);
+            preview.show(frame->image, results, fps);
         }
 
         const int key = cv::waitKey(1);

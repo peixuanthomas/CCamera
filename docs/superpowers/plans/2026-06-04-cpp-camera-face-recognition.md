@@ -1904,7 +1904,7 @@ git commit -m "feat: show live camera preview"
 - Modify: `src/app/AppController.hpp`
 - Modify: `src/app/AppController.cpp`
 
-- [ ] **Step 1: Add detector, aligner, extractor, database, and recognizer members**
+- [x] **Step 1: Add detector, aligner, extractor, database, and recognizer members**
 
 Modify `src/app/AppController.hpp`:
 
@@ -1948,7 +1948,7 @@ private:
 }  // namespace ccamera
 ```
 
-- [ ] **Step 2: Process frames through recognition**
+- [x] **Step 2: Process frames through recognition**
 
 Modify `src/app/AppController.cpp`:
 
@@ -2059,7 +2059,9 @@ Known people show their name when database entries exist.
 Unknown people show Unknown.
 ```
 
-- [ ] **Step 4: Commit recognition pipeline**
+- [x] **Step 4: Commit recognition pipeline**
+
+Progress note 2026-06-04: Task 8 implementation, spec review, and code-quality review completed. `AppController` now owns detector and recognizer ONNX Runtime engines, processes preview frames through detection, alignment, embedding extraction, database matching, and renders recognition results with FPS. Fresh automated verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 5/5 tests passed. Compatible `models/face_detector.onnx` and `models/face_recognizer.onnx` files are absent, so Task 8 Step 3 remains unchecked and the model/camera preview check is MANUAL/BLOCKED rather than passed.
 
 Run:
 
