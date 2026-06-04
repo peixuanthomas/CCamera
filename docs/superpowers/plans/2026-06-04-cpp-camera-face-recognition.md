@@ -1507,7 +1507,7 @@ git commit -m "feat: add face alignment and embedding extraction"
 - Create: `src/inference/OnnxRuntimeCpuEngine.hpp`
 - Create: `src/inference/OnnxRuntimeCpuEngine.cpp`
 
-- [ ] **Step 1: Implement ONNX Runtime CPU engine interface**
+- [x] **Step 1: Implement ONNX Runtime CPU engine interface**
 
 Create `src/inference/OnnxRuntimeCpuEngine.hpp`:
 
@@ -1541,7 +1541,7 @@ private:
 }  // namespace ccamera
 ```
 
-- [ ] **Step 2: Implement ONNX Runtime CPU engine**
+- [x] **Step 2: Implement ONNX Runtime CPU engine**
 
 Create `src/inference/OnnxRuntimeCpuEngine.cpp`:
 
@@ -1628,7 +1628,7 @@ TensorMap OnnxRuntimeCpuEngine::run(const TensorMap& inputs) {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 3: Register ONNX Runtime engine**
+- [x] **Step 3: Register ONNX Runtime engine**
 
 Modify `CMakeLists.txt`:
 
@@ -1642,7 +1642,7 @@ target_link_libraries(ccamera_core PUBLIC
 )
 ```
 
-- [ ] **Step 4: Build**
+- [x] **Step 4: Build**
 
 Run:
 
@@ -1656,7 +1656,9 @@ Expected:
 Build succeeded
 ```
 
-- [ ] **Step 5: Commit ONNX Runtime engine**
+Progress note 2026-06-04: Task 6 implementation, spec review, and code-quality review completed. `OnnxRuntimeCpuEngine` now owns a CPU ONNX Runtime session, records model input/output names, requires inputs by exact model name, runs float CPU tensors through ONNX Runtime, and returns outputs as `TensorMap`. The engine is registered in `ccamera_core` and links `ONNXRuntime::ONNXRuntime` publicly because the public header includes ONNX Runtime types. Fresh verification passed with `cmake --build build --config Debug`. No manual camera/model checks were run, and no ONNX model execution results were fabricated.
+
+- [x] **Step 5: Commit ONNX Runtime engine**
 
 Run:
 

@@ -39,6 +39,7 @@ target_sources(ccamera_core PRIVATE
     src/face/FaceDetector.cpp
     src/face/FaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
+    src/inference/OnnxRuntimeCpuEngine.cpp
     src/ui/PreviewOverlay.cpp
 )
 
@@ -56,6 +57,10 @@ target_link_libraries(ccamera_core PUBLIC
 
 target_link_libraries(ccamera_core PUBLIC
     nlohmann_json::nlohmann_json
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    ONNXRuntime::ONNXRuntime
 )
 
 add_executable(ccamera
