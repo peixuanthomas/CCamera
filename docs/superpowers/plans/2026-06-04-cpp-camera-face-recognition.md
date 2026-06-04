@@ -93,7 +93,7 @@ Responsibilities:
 - Create: `src/core/Math.hpp`
 - Create: `src/core/Math.cpp`
 
-- [ ] **Step 1: Create CMake project**
+- [x] **Step 1: Create CMake project**
 
 Create `CMakeLists.txt` with this content:
 
@@ -144,7 +144,7 @@ if (CCAMERA_BUILD_TESTS)
 endif()
 ```
 
-- [ ] **Step 2: Create ONNX Runtime CMake finder**
+- [x] **Step 2: Create ONNX Runtime CMake finder**
 
 Create `cmake/FindONNXRuntime.cmake` with this content:
 
@@ -179,7 +179,7 @@ if (ONNXRuntime_FOUND AND NOT TARGET ONNXRuntime::ONNXRuntime)
 endif()
 ```
 
-- [ ] **Step 3: Create app configuration example**
+- [x] **Step 3: Create app configuration example**
 
 Create `config/app.example.json`:
 
@@ -202,7 +202,7 @@ Create `config/app.example.json`:
 }
 ```
 
-- [ ] **Step 4: Create shared domain types**
+- [x] **Step 4: Create shared domain types**
 
 Create `src/core/Types.hpp`:
 
@@ -272,7 +272,7 @@ struct AppConfig {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 5: Create math helper interface**
+- [x] **Step 5: Create math helper interface**
 
 Create `src/core/Math.hpp`:
 
@@ -291,7 +291,7 @@ float cosine_similarity(const std::vector<float>& a, const std::vector<float>& b
 }  // namespace ccamera
 ```
 
-- [ ] **Step 6: Create math helper implementation**
+- [x] **Step 6: Create math helper implementation**
 
 Create `src/core/Math.cpp`:
 
@@ -342,7 +342,7 @@ float cosine_similarity(const std::vector<float>& a, const std::vector<float>& b
 }  // namespace ccamera
 ```
 
-- [ ] **Step 7: Add minimal entry point**
+- [x] **Step 7: Add minimal entry point**
 
 Create `src/main.cpp`:
 
@@ -355,7 +355,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 8: Create model and project documentation**
+- [x] **Step 8: Create model and project documentation**
 
 Create `models/README.md`:
 
@@ -397,7 +397,7 @@ Configure with `-DONNXRUNTIME_ROOT=<path-to-onnxruntime>`.
 
 Create an empty `data/.gitkeep`.
 
-- [ ] **Step 9: Configure project**
+- [x] **Step 9: Configure project**
 
 Run:
 
@@ -414,7 +414,9 @@ Generating done
 
 If OpenCV, ONNX Runtime, or nlohmann/json are missing, configuration fails with a package-specific message. Install or point CMake at those dependencies before continuing.
 
-- [ ] **Step 10: Commit scaffold**
+Progress note 2026-06-04: Task 1 implementation, spec review, and code-quality review completed. `cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON` now configures and generates successfully with project-local dependencies: OpenCV from `third_party/msys2/mingw64/lib/cmake/opencv4`, nlohmann/json from `third_party/msys2/mingw64/share/cmake/nlohmann_json`, and ONNX Runtime from `third_party/onnxruntime/onnxruntime-win-x64-1.25.1`. `cmake --build build --config Debug` also succeeds. No manual camera/model checks were run.
+
+- [x] **Step 10: Commit scaffold**
 
 Run:
 
