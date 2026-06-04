@@ -10,7 +10,7 @@ The system must support the full recognition flow:
 2. Detect faces in the frame.
 3. Extract face embedding vectors.
 4. Compare embeddings against a local enrolled face database.
-5. Display the recognized identity, confidence, FPS, and enrollment status.
+5. Display the recognized identity, confidence, FPS, enrollment status, face boxes, and visible face keypoints.
 6. Enroll new identities from the live camera feed.
 
 ## Chosen Approach
@@ -36,7 +36,14 @@ The command line controls service actions:
 - `list`: list enrolled identities.
 - `quit`: stop the program.
 
-The preview window displays the live camera feed, face boxes, identity labels, confidence scores, FPS, and enrollment progress. The preview window is not the primary control surface; it only provides visual feedback.
+The preview window displays the live camera feed, face boxes, face keypoints, identity labels, confidence scores, FPS, and enrollment progress. The preview window is not the primary control surface; it only provides visual feedback.
+
+Face visualization requirements:
+
+- Draw one rectangle around each detected face.
+- Draw red points on detected face keypoint positions, such as eyes, nose, and mouth corners when the detector or landmark model provides them.
+- Keep embedding vectors internal to recognition. Numeric embedding values are not drawn directly because they are high-dimensional recognition features, not image positions.
+- If the selected detector does not return landmarks, the first version should either omit red points or use a lightweight landmark model behind the same component boundary.
 
 ## Core Components
 
@@ -71,6 +78,7 @@ Responsibilities:
 - Preprocess frames for the detector model.
 - Run detector inference.
 - Decode boxes and confidence scores.
+- Decode landmark or keypoint coordinates when the model provides them.
 - Apply non-maximum suppression.
 - Filter low-confidence detections.
 
@@ -202,7 +210,7 @@ The controller enters enrollment mode:
 6. Save the template under the requested name.
 7. Return to recognition mode.
 
-If multiple faces are visible, enrollment pauses and asks the user to keep only one face in view. If no valid face is found for a timeout period, enrollment fails without changing the database.
+If multiple faces are visible, enrollment pauses and asks the user to keep only one face in view. If no valid face is found for a timeout period, enrollment fails without changing the database. During enrollment, the preview should still draw the candidate face box and red keypoint markers so the user can see whether the algorithm is locating the face correctly.
 
 ## Recognition Flow
 
@@ -214,7 +222,7 @@ For each processed frame:
 4. Extract embeddings.
 5. Compare embeddings to the local database.
 6. Mark faces as known if similarity is above threshold; otherwise mark as unknown.
-7. Publish results to display.
+7. Publish results to display, including face boxes and red keypoint markers for every detected face.
 
 Initial threshold values should be configurable because the correct value depends on the selected recognition model. A reasonable first design is:
 
@@ -306,6 +314,8 @@ Integration tests:
 Manual tests:
 
 - Start camera preview.
+- Confirm detected faces are outlined with rectangles.
+- Confirm detected face keypoints are shown as red points when landmarks are available.
 - Enroll one person.
 - Recognize that person.
 - Verify unknown handling for a non-enrolled person.
