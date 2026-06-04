@@ -34,8 +34,10 @@ add_library(ccamera_core
 
 target_sources(ccamera_core PRIVATE
     src/camera/FrameBuffer.cpp
+    src/face/FaceAligner.cpp
     src/face/FaceDatabase.cpp
     src/face/FaceDetector.cpp
+    src/face/FaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
     src/ui/PreviewOverlay.cpp
 )
@@ -98,5 +100,14 @@ if (CCAMERA_BUILD_TESTS)
         COMMAND ${CMAKE_COMMAND} -E env
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_visualization_contract>
+    )
+
+    add_executable(test_face_feature_extraction tests/test_face_feature_extraction.cpp)
+    target_link_libraries(test_face_feature_extraction PRIVATE ccamera_core)
+    add_test(
+        NAME test_face_feature_extraction
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_face_feature_extraction>
     )
 endif()

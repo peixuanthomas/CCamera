@@ -1317,7 +1317,7 @@ git commit -m "feat: draw face boxes and keypoints"
 - Create: `src/face/FaceFeatureExtractor.hpp`
 - Create: `src/face/FaceFeatureExtractor.cpp`
 
-- [ ] **Step 1: Implement face aligner**
+- [x] **Step 1: Implement face aligner**
 
 Create `src/face/FaceAligner.hpp`:
 
@@ -1379,7 +1379,7 @@ cv::Mat FaceAligner::align(const cv::Mat& frame, const FaceDetection& detection)
 }  // namespace ccamera
 ```
 
-- [ ] **Step 2: Implement feature extractor**
+- [x] **Step 2: Implement feature extractor**
 
 Create `src/face/FaceFeatureExtractor.hpp`:
 
@@ -1461,7 +1461,7 @@ FaceEmbedding average_embeddings(const std::vector<FaceEmbedding>& embeddings) {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 3: Register aligner and feature extractor**
+- [x] **Step 3: Register aligner and feature extractor**
 
 Modify `CMakeLists.txt`:
 
@@ -1472,7 +1472,7 @@ target_sources(ccamera_core PRIVATE
 )
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -1487,7 +1487,9 @@ Expected:
 100% tests passed
 ```
 
-- [ ] **Step 5: Commit feature extraction utilities**
+Progress note 2026-06-04: Task 5 implementation, spec review, and code-quality review completed. `FaceFeatureExtractor` validates recognizer embedding output shape/value count before normalization, accepts `[N]` and `[1, N]`, and packs aligned faces in NCHW float order. `FaceAligner` rejects invalid output sizes, empty frames, and too-small crops. Added `test_face_feature_extraction` for aligner behavior, tensor layout, malformed recognizer outputs, L2 normalization, and aggregation mismatch handling. Fresh verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 5/5 tests passed. No manual camera/model checks were run.
+
+- [x] **Step 5: Commit feature extraction utilities**
 
 Run:
 
