@@ -34,6 +34,7 @@ add_library(ccamera_core
 
 target_sources(ccamera_core PRIVATE
     src/app/AppController.cpp
+    src/app/CommandLoop.cpp
     src/camera/CameraCapture.cpp
     src/camera/FrameBuffer.cpp
     src/face/FaceAligner.cpp
@@ -121,4 +122,8 @@ if (CCAMERA_BUILD_TESTS)
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_face_feature_extraction>
     )
+
+    add_executable(test_command_loop tests/test_command_loop.cpp)
+    target_link_libraries(test_command_loop PRIVATE ccamera_core)
+    add_test(NAME test_command_loop COMMAND test_command_loop)
 endif()

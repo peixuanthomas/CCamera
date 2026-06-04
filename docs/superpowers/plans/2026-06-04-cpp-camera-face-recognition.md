@@ -2081,7 +2081,7 @@ git commit -m "feat: run recognition pipeline in preview"
 - Modify: `src/app/AppController.hpp`
 - Modify: `src/app/AppController.cpp`
 
-- [ ] **Step 1: Implement command loop**
+- [x] **Step 1: Implement command loop**
 
 Create `src/app/CommandLoop.hpp`:
 
@@ -2194,7 +2194,7 @@ void CommandLoop::run() {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 2: Add enrollment state to controller**
+- [x] **Step 2: Add enrollment state to controller**
 
 Modify `src/app/AppController.hpp` by adding:
 
@@ -2217,7 +2217,7 @@ void apply_commands(bool& running);
 void handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces);
 ```
 
-- [ ] **Step 3: Implement command handling and enrollment**
+- [x] **Step 3: Implement command handling and enrollment**
 
 Modify `src/app/AppController.cpp`. Add `#include <iostream>` with the existing includes:
 
@@ -2324,7 +2324,7 @@ apply_commands(running);
 
 Enrollment is now handled inside `process_frame` immediately after detection, before recognition reads a fresh database snapshot.
 
-- [ ] **Step 4: Register command loop**
+- [x] **Step 4: Register command loop**
 
 Modify `CMakeLists.txt`:
 
@@ -2362,7 +2362,9 @@ After delete Alice, Alice is removed from the database.
 quit exits the process.
 ```
 
-- [ ] **Step 6: Commit command loop and enrollment**
+- [x] **Step 6: Commit command loop and enrollment**
+
+Progress note 2026-06-05: Task 9 implementation, spec review, and code-quality review completed. `CommandLoop` now parses `enroll <name>`, `delete <name>`, `list`, and `quit`, preserves queued commands in input order, and uses nonblocking Windows console/pipe handling so shutdown through preview keys can join the command thread. `AppController` applies queued commands, handles live enrollment from exactly one detected face, catches command/enrollment failures without terminating the preview loop, and saves database changes. Fresh automated verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 6/6 tests passed, including `test_command_loop`. Manual command/camera enrollment testing was not run with hardware and compatible ONNX model files, so Task 9 Step 5 remains unchecked and MANUAL/BLOCKED rather than passed.
 
 Run:
 
