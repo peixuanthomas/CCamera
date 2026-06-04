@@ -35,7 +35,9 @@ add_library(ccamera_core
 target_sources(ccamera_core PRIVATE
     src/camera/FrameBuffer.cpp
     src/face/FaceDatabase.cpp
+    src/face/FaceDetector.cpp
     src/face/Recognizer.cpp
+    src/ui/PreviewOverlay.cpp
 )
 
 target_include_directories(ccamera_core PUBLIC
@@ -47,11 +49,16 @@ target_link_libraries(ccamera_core PUBLIC
 )
 
 target_link_libraries(ccamera_core PUBLIC
+    opencv_imgproc
+)
+
+target_link_libraries(ccamera_core PUBLIC
     nlohmann_json::nlohmann_json
 )
 
 add_executable(ccamera
     src/main.cpp
+    src/ui/PreviewWindow.cpp
 )
 
 target_link_libraries(ccamera PRIVATE
@@ -82,5 +89,14 @@ if (CCAMERA_BUILD_TESTS)
         COMMAND ${CMAKE_COMMAND} -E env
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_frame_buffer>
+    )
+
+    add_executable(test_visualization_contract tests/test_visualization_contract.cpp)
+    target_link_libraries(test_visualization_contract PRIVATE ccamera_core)
+    add_test(
+        NAME test_visualization_contract
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_visualization_contract>
     )
 endif()

@@ -977,9 +977,10 @@ git commit -m "feat: add latest frame buffer"
 - Create: `src/face/FaceDetector.cpp`
 - Create: `src/ui/PreviewWindow.hpp`
 - Create: `src/ui/PreviewWindow.cpp`
+- Create: `src/ui/PreviewOverlay.cpp`
 - Create: `tests/test_visualization_contract.cpp`
 
-- [ ] **Step 1: Add failing visualization contract test**
+- [x] **Step 1: Add failing visualization contract test**
 
 Create `tests/test_visualization_contract.cpp`:
 
@@ -1038,7 +1039,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 2: Register detector and preview code**
+- [x] **Step 2: Register detector and preview code**
 
 Modify `CMakeLists.txt`:
 
@@ -1058,7 +1059,7 @@ target_link_libraries(test_visualization_contract PRIVATE ccamera_core)
 add_test(NAME test_visualization_contract COMMAND test_visualization_contract)
 ```
 
-- [ ] **Step 3: Run build and verify missing inference header**
+- [x] **Step 3: Run build and verify missing inference header**
 
 Run:
 
@@ -1072,7 +1073,7 @@ Expected:
 Cannot open include file: 'inference/InferenceEngine.hpp'
 ```
 
-- [ ] **Step 4: Implement inference interface**
+- [x] **Step 4: Implement inference interface**
 
 Create `src/inference/InferenceEngine.hpp`:
 
@@ -1101,7 +1102,7 @@ public:
 }  // namespace ccamera
 ```
 
-- [ ] **Step 5: Implement face detector decoding**
+- [x] **Step 5: Implement face detector decoding**
 
 Create `src/face/FaceDetector.hpp`:
 
@@ -1188,7 +1189,7 @@ std::vector<FaceDetection> FaceDetector::detect(const cv::Mat& frame) {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 6: Implement overlay drawing**
+- [x] **Step 6: Implement overlay drawing**
 
 Create `src/ui/PreviewWindow.hpp`:
 
@@ -1279,7 +1280,7 @@ void PreviewWindow::draw_overlay(cv::Mat& frame, const std::vector<RecognitionRe
 }  // namespace ccamera
 ```
 
-- [ ] **Step 7: Run tests**
+- [x] **Step 7: Run tests**
 
 Run:
 
@@ -1294,7 +1295,9 @@ Expected:
 100% tests passed
 ```
 
-- [ ] **Step 8: Commit detector and overlay contract**
+Progress note 2026-06-04: Task 4 implementation, spec review, and code-quality review completed. Code-quality fixes populated detector input tensors from `cv::Mat` in NCHW float order, restored direct `cv::namedWindow` / `cv::imshow` for the preview executable, and strengthened `test_visualization_contract` to validate detector input and all five red keypoints. The verification blocker was resolved by moving `PreviewWindow::draw_overlay()` into `src/ui/PreviewOverlay.cpp`, keeping `opencv_highgui` out of the headless test link path while `ccamera` still links highgui for the real preview window. Fresh verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 4/4 tests passed. No manual camera/model checks were run.
+
+- [x] **Step 8: Commit detector and overlay contract**
 
 Run:
 
