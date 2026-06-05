@@ -1,6 +1,7 @@
 #include "camera/CameraCapture.hpp"
 
 #include <cassert>
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -25,6 +26,22 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         return false;
     }
+};
+
+class ImmediateFailingReadSource final : public ccamera::CameraSource {
+public:
+    explicit ImmediateFailingReadSource(std::atomic<int>& read_count) : read_count_(read_count) {}
+
+    bool open(int) override { return true; }
+    bool is_opened() const override { return true; }
+    void set(int, double) override {}
+    bool read(cv::Mat&) override {
+        ++read_count_;
+        return false;
+    }
+
+private:
+    std::atomic<int>& read_count_;
 };
 
 bool wait_for_error(ccamera::CameraCapture& camera, const std::string& expected) {
@@ -65,6 +82,22 @@ int main() {
         const auto status = camera.status();
         assert(status.opened);
         assert(status.frames_captured == 0);
+    }
+
+    {
+        ccamera::FrameBuffer buffer;
+        ccamera::AppConfig config;
+        std::atomic<int> read_count{0};
+        ccamera::CameraCapture camera(config, buffer, [&] {
+            return std::make_unique<ImmediateFailingReadSource>(read_count);
+        });
+
+        camera.start();
+        std::this_thread::sleep_for(std::chrono::milliseconds(40));
+        camera.stop();
+
+        assert(read_count.load() <= 20);
+        assert(camera.status().last_error.find("read frame") != std::string::npos);
     }
 
     return 0;

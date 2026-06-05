@@ -1,7 +1,9 @@
 #include "camera/CameraCapture.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <string>
+#include <thread>
 #include <utility>
 
 namespace ccamera {
@@ -9,6 +11,7 @@ namespace {
 
 constexpr int kOpenCvFrameWidthProperty = 3;
 constexpr int kOpenCvFrameHeightProperty = 4;
+constexpr auto kReadFailureBackoff = std::chrono::milliseconds(5);
 
 }  // namespace
 
@@ -84,6 +87,7 @@ void CameraCapture::run() {
         cv::Mat image;
         if (!capture->read(image) || image.empty()) {
             update_status_error("failed to read frame from camera index " + std::to_string(config_.camera_index));
+            std::this_thread::sleep_for(kReadFailureBackoff);
             continue;
         }
 

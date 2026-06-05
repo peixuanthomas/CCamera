@@ -1,5 +1,6 @@
 #include "app/AppController.hpp"
 
+#include "app/AppRunCleanup.hpp"
 #include "camera/CameraCapture.hpp"
 #include "ui/PreviewWindow.hpp"
 
@@ -162,6 +163,15 @@ int AppController::run() {
     PreviewWindow preview("CCamera");
 
     camera.start();
+    AppRunCleanup cleanup(
+        [this] {
+            recognition_running_ = false;
+            if (recognition_thread_.joinable()) {
+                recognition_thread_.join();
+            }
+        },
+        [this] { command_loop_.stop(); },
+        [&camera] { camera.stop(); });
     recognition_running_ = true;
     recognition_thread_ = std::thread(&AppController::recognition_loop, this);
     command_loop_.start();
@@ -197,6 +207,7 @@ int AppController::run() {
     }
     command_loop_.stop();
     camera.stop();
+    cleanup.dismiss();
     return 0;
 }
 

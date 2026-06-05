@@ -35,6 +35,7 @@ add_library(ccamera_core
 target_sources(ccamera_core PRIVATE
     src/app/AppConfig.cpp
     src/app/AppController.cpp
+    src/app/AppRunCleanup.cpp
     src/app/CommandLoop.cpp
     src/app/EnrollmentSession.cpp
     src/app/RecognitionResults.cpp
@@ -163,4 +164,8 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_model_contracts tests/test_model_contracts.cpp)
     target_link_libraries(test_model_contracts PRIVATE ccamera_core)
     add_test(NAME test_model_contracts COMMAND test_model_contracts)
+
+    add_executable(test_app_run_cleanup tests/test_app_run_cleanup.cpp)
+    target_link_libraries(test_app_run_cleanup PRIVATE ccamera_core)
+    add_test(NAME test_app_run_cleanup COMMAND test_app_run_cleanup)
 endif()
