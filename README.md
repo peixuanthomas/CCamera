@@ -40,6 +40,16 @@ The preview window draws rectangles around detected faces and red points on dete
 
 Press `Q` or `Esc` in the preview window to close the app.
 
+## Offline Virtual Dataset Test
+
+The automated test suite includes a no-camera virtual dataset path:
+
+```powershell
+ctest --test-dir build -C Debug -R test_offline_virtual_dataset --output-on-failure
+```
+
+This test uses a synthetic OpenCV frame and test-only fake detector/recognizer engines. It exercises detector output decoding, face alignment, feature extraction normalization, database snapshot matching, and recognition result assembly without opening camera hardware or loading ONNX model files.
+
 ## Model Contract
 
 The detector input is `image`: a batch-1 NCHW float32 tensor using OpenCV BGR channel order. The detector output is `detections` with shape `[N, 15]`; each row is `[x1, y1, x2, y2, score, left_eye_x, left_eye_y, right_eye_x, right_eye_y, nose_x, nose_y, mouth_left_x, mouth_left_y, mouth_right_x, mouth_right_y]` in frame pixel coordinates.

@@ -168,4 +168,13 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_app_run_cleanup tests/test_app_run_cleanup.cpp)
     target_link_libraries(test_app_run_cleanup PRIVATE ccamera_core)
     add_test(NAME test_app_run_cleanup COMMAND test_app_run_cleanup)
+
+    add_executable(test_offline_virtual_dataset tests/test_offline_virtual_dataset.cpp)
+    target_link_libraries(test_offline_virtual_dataset PRIVATE ccamera_core)
+    add_test(
+        NAME test_offline_virtual_dataset
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_offline_virtual_dataset>
+    )
 endif()

@@ -2531,11 +2531,19 @@ Code-quality review fix note 2026-06-05: `AppController::run()` now uses `AppRun
 
 ---
 
+### Offline Virtual Dataset Test Support
+
+- [x] **Step 1: Add no-camera virtual dataset automated test**
+
+Progress note 2026-06-05: Added `test_offline_virtual_dataset` with a deterministic test-only virtual face dataset, synthetic OpenCV frame, and fake detector/recognizer inference engines. The test exercises current pipeline components through detector tensor packing/output decoding, face alignment, feature extraction normalization, database snapshot matching, and recognition result assembly without calling `CameraCapture`, opening a camera, constructing `OnnxRuntimeCpuEngine`, or loading real ONNX model files. TDD red verification first failed on missing `support/VirtualFaceDataset.hpp`; final automated verification passed with `cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON`, `cmake --build build --config Debug`, `ctest --test-dir build -C Debug -R test_offline_virtual_dataset --output-on-failure`, and `ctest --test-dir build -C Debug --output-on-failure` reporting 13/13 tests passed. Manual camera/model checks were not run and remain unchecked.
+
+---
+
 ## Final Acceptance Checklist
 
-- [ ] CMake configure succeeds with OpenCV, ONNX Runtime, and nlohmann/json available.
-- [ ] `cmake --build build --config Debug` succeeds.
-- [ ] `ctest --test-dir build -C Debug --output-on-failure` reports all tests passed.
+- [x] CMake configure succeeds with OpenCV, ONNX Runtime, and nlohmann/json available.
+- [x] `cmake --build build --config Debug` succeeds.
+- [x] `ctest --test-dir build -C Debug --output-on-failure` reports all tests passed.
 - [ ] Camera preview opens.
 - [ ] Face rectangles are drawn around detected faces.
 - [ ] Red keypoint markers are drawn on detected face landmarks.
