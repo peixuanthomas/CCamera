@@ -48,7 +48,7 @@ The automated test suite includes a no-camera virtual dataset path:
 ctest --test-dir build -C Debug -R test_offline_virtual_dataset --output-on-failure
 ```
 
-This test uses a synthetic OpenCV frame and test-only fake detector/recognizer engines. It exercises detector output decoding, face alignment, feature extraction normalization, database snapshot matching, and recognition result assembly without opening camera hardware or loading ONNX model files.
+This test uses a synthetic OpenCV frame and test-only fake detector/recognizer engines. The fake recognizer derives its embedding from the aligned synthetic crop pixels, so the test checks detector output decoding, keypoint decoding, face alignment, feature extraction normalization, database snapshot matching, and recognition result assembly without opening camera hardware or loading ONNX model files.
 
 ## Model Contract
 

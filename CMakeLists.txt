@@ -38,6 +38,7 @@ target_sources(ccamera_core PRIVATE
     src/app/AppRunCleanup.cpp
     src/app/CommandLoop.cpp
     src/app/EnrollmentSession.cpp
+    src/app/FrameRecognition.cpp
     src/app/RecognitionResults.cpp
     src/camera/CameraCapture.cpp
     src/camera/CameraCaptureDefault.cpp

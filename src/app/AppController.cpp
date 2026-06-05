@@ -1,6 +1,7 @@
 #include "app/AppController.hpp"
 
 #include "app/AppRunCleanup.hpp"
+#include "app/FrameRecognition.hpp"
 #include "camera/CameraCapture.hpp"
 #include "ui/PreviewWindow.hpp"
 
@@ -110,33 +111,12 @@ void AppController::handle_enrollment(
 }
 
 std::vector<RecognitionResult> AppController::process_frame(const Frame& frame) {
-    std::vector<RecognitionResult> results;
     const auto faces = detector_.detect(frame.image);
 
     handle_enrollment(frame.image, faces, Clock::now());
 
     const auto db_snapshot = database_.snapshot();
-
-    for (const auto& face : faces) {
-        RecognitionResult result;
-        result.detection = face;
-        result.frame_sequence = frame.sequence;
-        try {
-            const cv::Mat aligned = aligner_.align(frame.image, face);
-            const FaceEmbedding embedding = extractor_.extract(aligned);
-            const MatchResult match = recognizer_.match(embedding, db_snapshot);
-            result.label = match.label;
-            result.similarity = match.similarity;
-            result.known = match.known;
-        } catch (const std::exception&) {
-            result.label = "Invalid face";
-            result.similarity = 0.0f;
-            result.known = false;
-        }
-        results.push_back(std::move(result));
-    }
-
-    return results;
+    return recognize_frame_faces(frame, faces, aligner_, extractor_, db_snapshot, recognizer_);
 }
 
 void AppController::recognition_loop() {
