@@ -2541,6 +2541,26 @@ Code-quality review fix note 2026-06-05: The virtual dataset test now uses produ
 
 ---
 
+### Windows Direct Executable Runtime Deployment Bugfix
+
+- [x] **Step 1: Add automated runtime deployment regression test**
+
+Progress note 2026-06-05: Added `test_runtime_deployment`, a CTest script that checks required Windows runtime DLL basenames beside `$<TARGET_FILE:ccamera>`. TDD red verification first failed because `build/ccamera.exe` had no directly imported runtime DLLs deployed beside it.
+
+- [x] **Step 2: Deploy directly imported Windows runtime DLLs beside the executable**
+
+Progress note 2026-06-05: The `ccamera` target now copies configured OpenCV imported DLLs, configured ONNX Runtime DLL, and MinGW runtime DLLs resolved from configured prefixes and the compiler directory beside `ccamera.exe` after build. Explicit user-provided dependency paths still take precedence over project-local fallback paths. Automated deployment verification passes, but a direct startup probe still exits `-1073741515` in this workspace because OpenCV `highgui`/`videoio` transitive Qt, FFmpeg, GStreamer, and codec DLLs are absent from the configured dependency prefixes. No camera or real ONNX model execution was run.
+
+- [x] **Step 3: Remove loader-time GUI/video dependency from the launcher**
+
+Progress note 2026-06-05: Added `test_executable_startup`, which first failed before application startup with CMake reporting `result=no such file or directory` for the Windows loader failure. `ccamera.exe` now links only the config launcher path, validates model paths before loading camera/GUI dependencies, and loads `ccamera_runtime.dll` dynamically for the live camera path. With `config/app.example.json`, direct startup now reports the missing detector model instead of exiting `-1073741515`; with dummy existing model paths and missing OpenCV Qt/FFmpeg/GStreamer transitive DLLs, it reports a clear runtime-module load error. No camera or real ONNX model execution was run.
+
+- [x] **Step 4: Strengthen runtime-module and ONNX layout regression coverage**
+
+Progress note 2026-06-05: Code-quality review fixes added `test_executable_startup_runtime`, which creates temporary dummy model files so startup reaches runtime-module loading instead of passing on missing model validation, and `test_runtime_deployment` now checks `ccamera_runtime.dll` beside the launcher. `test_find_onnxruntime_bin_layout` first failed because the ONNX Runtime finder selected a default/system DLL instead of a user-provided root with `onnxruntime.dll` in `bin`; the finder now searches explicit roots with `bin`, `lib`, and `lib64` suffixes before default locations. Non-Windows runtime-module lookup now uses platform executable paths where available before falling back to `PATH` lookup, and the runtime module filename is injected from CMake's `$<TARGET_FILE_NAME:ccamera_runtime>` so platform-specific extensions are not hard-coded. No camera or real ONNX model execution was run.
+
+---
+
 ## Final Acceptance Checklist
 
 - [x] CMake configure succeeds with OpenCV, ONNX Runtime, and nlohmann/json available.

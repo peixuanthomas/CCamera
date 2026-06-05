@@ -28,12 +28,156 @@ find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio)
 find_package(ONNXRuntime REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
+function(ccamera_append_imported_runtime_dll_name output_variable target_name)
+    if (NOT TARGET "${target_name}")
+        return()
+    endif()
+
+    set(_locations)
+    get_target_property(_imported_configs "${target_name}" IMPORTED_CONFIGURATIONS)
+    foreach (_config IN LISTS _imported_configs)
+        get_target_property(_location "${target_name}" "IMPORTED_LOCATION_${_config}")
+        if (_location)
+            list(APPEND _locations "${_location}")
+        endif()
+    endforeach()
+
+    get_target_property(_location "${target_name}" IMPORTED_LOCATION)
+    if (_location)
+        list(APPEND _locations "${_location}")
+    endif()
+
+    set(_names)
+    foreach (_location IN LISTS _locations)
+        if (_location MATCHES "\\.dll$")
+            get_filename_component(_name "${_location}" NAME)
+            list(APPEND _names "${_name}")
+        endif()
+    endforeach()
+
+    if (_names)
+        set(_current "${${output_variable}}")
+        list(APPEND _current ${_names})
+        list(REMOVE_DUPLICATES _current)
+        set("${output_variable}" "${_current}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(ccamera_append_imported_runtime_dll output_variable target_name)
+    if (NOT TARGET "${target_name}")
+        return()
+    endif()
+
+    set(_locations)
+    get_target_property(_imported_configs "${target_name}" IMPORTED_CONFIGURATIONS)
+    foreach (_config IN LISTS _imported_configs)
+        get_target_property(_location "${target_name}" "IMPORTED_LOCATION_${_config}")
+        if (_location)
+            list(APPEND _locations "${_location}")
+        endif()
+    endforeach()
+
+    get_target_property(_location "${target_name}" IMPORTED_LOCATION)
+    if (_location)
+        list(APPEND _locations "${_location}")
+    endif()
+
+    set(_runtime_dlls)
+    foreach (_location IN LISTS _locations)
+        if (_location MATCHES "\\.dll$" AND EXISTS "${_location}")
+            list(APPEND _runtime_dlls "${_location}")
+        endif()
+    endforeach()
+
+    if (_runtime_dlls)
+        set(_current "${${output_variable}}")
+        list(APPEND _current ${_runtime_dlls})
+        list(REMOVE_DUPLICATES _current)
+        set("${output_variable}" "${_current}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(ccamera_append_named_runtime_dll output_variable dll_name)
+    set(_runtime_dll)
+    foreach (_runtime_search_dir IN LISTS CCAMERA_RUNTIME_SEARCH_DIRS)
+        if (EXISTS "${_runtime_search_dir}/${dll_name}")
+            set(_runtime_dll "${_runtime_search_dir}/${dll_name}")
+            break()
+        endif()
+    endforeach()
+
+    if (NOT _runtime_dll)
+        message(FATAL_ERROR "Required runtime DLL not found: ${dll_name}")
+    endif()
+
+    set(_current "${${output_variable}}")
+    list(APPEND _current "${_runtime_dll}")
+    list(REMOVE_DUPLICATES _current)
+    set("${output_variable}" "${_current}" PARENT_SCOPE)
+endfunction()
+
+set(CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES)
+if (WIN32)
+    foreach (_opencv_runtime_target IN ITEMS
+            opencv_core
+            opencv_highgui
+            opencv_imgproc
+            opencv_videoio)
+        ccamera_append_imported_runtime_dll_name(
+            CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES
+            "${_opencv_runtime_target}"
+        )
+    endforeach()
+
+    list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES onnxruntime.dll)
+    if (MINGW)
+        list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES
+            libgcc_s_seh-1.dll
+            libwinpthread-1.dll
+            libstdc++-6.dll
+        )
+    endif()
+endif()
+list(REMOVE_DUPLICATES CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES)
+
+get_filename_component(CCAMERA_CXX_COMPILER_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+set(CCAMERA_RUNTIME_SEARCH_DIRS)
+foreach (_prefix IN LISTS CMAKE_PREFIX_PATH)
+    list(APPEND CCAMERA_RUNTIME_SEARCH_DIRS
+        "${_prefix}/bin"
+        "${_prefix}/lib"
+    )
+endforeach()
+if (DEFINED ENV{MINGW_PREFIX})
+    list(APPEND CCAMERA_RUNTIME_SEARCH_DIRS "$ENV{MINGW_PREFIX}/bin")
+endif()
+if (DEFINED ENV{MSYSTEM_PREFIX})
+    list(APPEND CCAMERA_RUNTIME_SEARCH_DIRS "$ENV{MSYSTEM_PREFIX}/bin")
+endif()
+list(APPEND CCAMERA_RUNTIME_SEARCH_DIRS
+    "${CCAMERA_LOCAL_MINGW_PREFIX}/bin"
+    "${CCAMERA_CXX_COMPILER_DIR}"
+)
+list(REMOVE_DUPLICATES CCAMERA_RUNTIME_SEARCH_DIRS)
+
+add_library(ccamera_config
+    src/app/AppConfig.cpp
+)
+
+target_include_directories(ccamera_config PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+target_link_libraries(ccamera_config PUBLIC
+    nlohmann_json::nlohmann_json
+)
+
 add_library(ccamera_core
     src/core/Math.cpp
 )
 
 target_sources(ccamera_core PRIVATE
-    src/app/AppConfig.cpp
     src/app/AppController.cpp
     src/app/AppRunCleanup.cpp
     src/app/CommandLoop.cpp
@@ -54,6 +198,10 @@ target_sources(ccamera_core PRIVATE
 
 target_include_directories(ccamera_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    ccamera_config
 )
 
 target_link_libraries(ccamera_core PUBLIC
@@ -78,10 +226,31 @@ target_link_libraries(ccamera_core PUBLIC
 
 add_executable(ccamera
     src/main.cpp
-    src/ui/PreviewWindow.cpp
 )
 
 target_link_libraries(ccamera PRIVATE
+    ccamera_config
+)
+
+target_compile_definitions(ccamera PRIVATE
+    "CCAMERA_RUNTIME_MODULE_NAME=\"$<TARGET_FILE_NAME:ccamera_runtime>\""
+)
+
+add_library(ccamera_runtime SHARED
+    src/runtime/RunApp.cpp
+    src/ui/PreviewWindow.cpp
+)
+
+if (WIN32)
+    set_target_properties(ccamera_runtime PROPERTIES PREFIX "")
+endif()
+
+set(CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES "${CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES}")
+if (WIN32)
+    list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES "$<TARGET_FILE_NAME:ccamera_runtime>")
+endif()
+
+target_link_libraries(ccamera_runtime PRIVATE
     ccamera_core
     opencv_core
     opencv_imgproc
@@ -90,6 +259,49 @@ target_link_libraries(ccamera PRIVATE
     ONNXRuntime::ONNXRuntime
     nlohmann_json::nlohmann_json
 )
+
+add_dependencies(ccamera ccamera_runtime)
+
+set(CCAMERA_REQUIRED_RUNTIME_DLLS)
+if (WIN32)
+    foreach (_opencv_runtime_target IN ITEMS
+            opencv_core
+            opencv_highgui
+            opencv_imgproc
+            opencv_videoio)
+        ccamera_append_imported_runtime_dll(
+            CCAMERA_REQUIRED_RUNTIME_DLLS
+            "${_opencv_runtime_target}"
+        )
+    endforeach()
+    ccamera_append_imported_runtime_dll(
+        CCAMERA_REQUIRED_RUNTIME_DLLS
+        ONNXRuntime::ONNXRuntime
+    )
+
+    if (MINGW)
+        foreach (_mingw_runtime_dll IN ITEMS
+                libgcc_s_seh-1.dll
+                libwinpthread-1.dll
+                libstdc++-6.dll)
+            ccamera_append_named_runtime_dll(
+                CCAMERA_REQUIRED_RUNTIME_DLLS
+                "${_mingw_runtime_dll}"
+            )
+        endforeach()
+    endif()
+endif()
+list(REMOVE_DUPLICATES CCAMERA_REQUIRED_RUNTIME_DLLS)
+
+if (WIN32 AND CCAMERA_REQUIRED_RUNTIME_DLLS)
+    add_custom_command(TARGET ccamera_runtime POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CCAMERA_REQUIRED_RUNTIME_DLLS}
+            $<TARGET_FILE_DIR:ccamera_runtime>
+        COMMAND_EXPAND_LISTS
+        COMMENT "Deploying runtime DLLs beside ccamera"
+    )
+endif()
 
 if (CCAMERA_BUILD_TESTS)
     enable_testing()
@@ -178,4 +390,40 @@ if (CCAMERA_BUILD_TESTS)
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_offline_virtual_dataset>
     )
+
+    if (WIN32)
+        add_test(
+            NAME test_runtime_deployment
+            COMMAND ${CMAKE_COMMAND}
+                -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
+                "-DCCAMERA_REQUIRED_DLLS=${CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckRuntimeDeployment.cmake"
+        )
+        add_test(
+            NAME test_executable_startup
+            COMMAND ${CMAKE_COMMAND}
+                -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
+                -DCCAMERA_CONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/config/app.example.json
+                -DCCAMERA_WORKING_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
+        )
+        add_test(
+            NAME test_executable_startup_runtime
+            COMMAND ${CMAKE_COMMAND}
+                -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
+                -DCCAMERA_CONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/config/app.example.json
+                -DCCAMERA_WORKING_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}
+                -DCCAMERA_STARTUP_MODE=runtime
+                -DCCAMERA_STARTUP_PROBE_DIR=${CMAKE_CURRENT_BINARY_DIR}/startup-runtime-probe
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
+        )
+        add_test(
+            NAME test_find_onnxruntime_bin_layout
+            COMMAND ${CMAKE_COMMAND}
+                -DCCAMERA_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+                -DCCAMERA_PROBE_DIR=${CMAKE_CURRENT_BINARY_DIR}/onnxruntime-bin-layout-probe
+                "-DCCAMERA_GENERATOR=${CMAKE_GENERATOR}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TestFindONNXRuntimeBinLayout.cmake"
+        )
+    endif()
 endif()
