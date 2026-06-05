@@ -2382,7 +2382,7 @@ git commit -m "feat: add command loop and live enrollment"
 - Modify: `src/app/AppController.cpp`
 - Modify: `README.md`
 
-- [ ] **Step 1: Add worker ownership to controller**
+- [x] **Step 1: Add worker ownership to controller**
 
 Modify `src/app/AppController.hpp` with these members:
 
@@ -2401,7 +2401,7 @@ void recognition_loop();
 std::vector<RecognitionResult> latest_results();
 ```
 
-- [ ] **Step 2: Move recognition to worker loop**
+- [x] **Step 2: Move recognition to worker loop**
 
 Modify `src/app/AppController.cpp`:
 
@@ -2450,7 +2450,7 @@ In preview rendering, use:
 preview.show(frame->image, latest_results(), fps);
 ```
 
-- [ ] **Step 3: Add required includes**
+- [x] **Step 3: Add required includes**
 
 Add these includes to `src/app/AppController.hpp`:
 
@@ -2467,7 +2467,7 @@ Add this include to `src/app/AppController.cpp`:
 #include <thread>
 ```
 
-- [ ] **Step 4: Update README run instructions**
+- [x] **Step 4: Update README run instructions**
 
 Append to `README.md`:
 
@@ -2484,7 +2484,7 @@ The preview window draws rectangles around detected faces and red points on dete
 Press `Q` or `Esc` in the preview window to close the app.
 ```
 
-- [ ] **Step 5: Run automated verification**
+- [x] **Step 5: Run automated verification**
 
 Run:
 
@@ -2516,7 +2516,7 @@ Detected left eye, right eye, nose, and mouth corners are red points.
 The preview does not freeze while recognition is running.
 ```
 
-- [ ] **Step 7: Commit threaded processing**
+- [x] **Step 7: Commit threaded processing**
 
 Run:
 
@@ -2524,6 +2524,8 @@ Run:
 git add src/app README.md
 git commit -m "feat: run recognition on worker thread"
 ```
+
+Progress note 2026-06-05: Task 10 automated implementation and review-risk hardening completed. `AppController` now runs recognition on a worker thread, contains detector/recognizer exceptions through `RecognitionResultsStore`, tags recognition results with frame sequences, and only draws overlays for the current frame sequence so stale results clear. `main()` supports `--config`/positional config paths and validates `config/app.example.json`; unknown `inference_backend` values and obvious invalid numeric/path fields fail before app startup. Model contracts are explicit in `src/face/ModelContracts.hpp`, `README.md`, and `models/README.md`; tensor shape/value validation is used before ONNX Runtime inputs and in face pre/postprocessing. `CameraCapture` exposes a testable status/error surface and supports fake camera sources for hardware-free open/read failure tests. Enrollment now enforces `enrollment_timeout_seconds` and rejects inconsistent samples using cosine similarity before storing an averaged embedding. TDD red verification failed first on missing `app/AppConfig.hpp`; final automated verification passed with `cmake --build build --config Debug` and `ctest --test-dir build -C Debug --output-on-failure` reporting 11/11 tests passed. Manual visual camera/model verification was not run, so Task 10 Step 6 remains unchecked and MANUAL/NOT RUN rather than passed.
 
 ---
 

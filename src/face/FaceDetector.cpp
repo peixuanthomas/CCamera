@@ -1,5 +1,7 @@
 #include "face/FaceDetector.hpp"
 
+#include "face/ModelContracts.hpp"
+
 #include <stdexcept>
 
 namespace ccamera {
@@ -8,6 +10,14 @@ FaceDetector::FaceDetector(InferenceEngine& engine, float threshold)
     : engine_(engine), threshold_(threshold) {}
 
 std::vector<FaceDetection> FaceDetector::detect(const cv::Mat& frame) {
+    if (frame.empty()) {
+        throw std::runtime_error("detector input frame is empty");
+    }
+    if (frame.channels() <= 0) {
+        throw std::runtime_error("detector input frame must have channels");
+    }
+
+    const auto contract = detector_model_contract();
     cv::Mat float_frame;
     frame.convertTo(float_frame, CV_32F);
 
@@ -29,19 +39,21 @@ std::vector<FaceDetection> FaceDetector::detect(const cv::Mat& frame) {
         }
     }
 
-    const auto outputs = engine_.run({{"image", input}});
-    const auto found = outputs.find("detections");
+    validate_tensor_shape_and_values(contract.input_name, input);
+
+    const auto outputs = engine_.run({{contract.input_name, input}});
+    const auto found = outputs.find(contract.output_name);
     if (found == outputs.end()) {
-        throw std::runtime_error("detector output 'detections' is missing");
+        throw std::runtime_error("detector output '" + contract.output_name + "' is missing");
     }
 
     const Tensor& tensor = found->second;
-    if (tensor.shape.size() != 2 || tensor.shape[0] < 0 || tensor.shape[1] != 15) {
+    if (tensor.shape.size() != 2 || tensor.shape[0] < 0 || tensor.shape[1] != contract.detection_columns) {
         throw std::runtime_error("detector output must have shape [N, 15]");
     }
 
     const int64_t rows = tensor.shape[0];
-    const auto expected_values = static_cast<std::size_t>(rows * 15);
+    const auto expected_values = static_cast<std::size_t>(rows * contract.detection_columns);
     if (tensor.values.size() != expected_values) {
         throw std::runtime_error("detector output values do not match shape [N, 15]");
     }

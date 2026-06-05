@@ -66,6 +66,7 @@ TensorMap OnnxRuntimeCpuEngine::run(const TensorMap& inputs) {
         }
 
         const Tensor& tensor = input->second;
+        validate_tensor_shape_and_values(input_name, tensor);
         const std::size_t element_count = tensor.values.size();
         input_name_ptrs.push_back(input_name.c_str());
         input_tensors.push_back(Ort::Value::CreateTensor<float>(

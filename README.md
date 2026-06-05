@@ -28,3 +28,20 @@ cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON -DONNXRUNTIME_ROOT=<path-to-onnxrun
 On Windows, use semicolon-separated entries in `CMAKE_PREFIX_PATH` when OpenCV and nlohmann/json are installed under different prefixes.
 
 When project-local dependencies exist under `third_party`, CMake uses them as fallback hints. The bundled MSYS2 OpenCV and nlohmann/json prefix is only used for MinGW builds, and explicit `OpenCV_DIR`, `ONNXRUNTIME_ROOT`, or `CMAKE_PREFIX_PATH` values take precedence.
+
+## Running
+
+1. Place compatible detector and recognizer ONNX files in `models/`.
+2. Configure dependency paths with CMake.
+3. Build the executable.
+4. Run `ccamera.exe --config config/app.example.json`, or omit `--config` to use built-in defaults.
+
+The preview window draws rectangles around detected faces and red points on detected face keypoints. The command line accepts `enroll <name>`, `delete <name>`, `list`, and `quit`.
+
+Press `Q` or `Esc` in the preview window to close the app.
+
+## Model Contract
+
+The detector input is `image`: a batch-1 NCHW float32 tensor using OpenCV BGR channel order. The detector output is `detections` with shape `[N, 15]`; each row is `[x1, y1, x2, y2, score, left_eye_x, left_eye_y, right_eye_x, right_eye_y, nose_x, nose_y, mouth_left_x, mouth_left_y, mouth_right_x, mouth_right_y]` in frame pixel coordinates.
+
+The recognizer input is `face`: a batch-1 NCHW float32 aligned face tensor using OpenCV BGR channel order. The recognizer output is `embedding` with shape `[N]` or `[1, N]`. Embeddings are L2-normalized before matching or storage.

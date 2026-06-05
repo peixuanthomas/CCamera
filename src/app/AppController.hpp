@@ -1,6 +1,8 @@
 #pragma once
 
 #include "app/CommandLoop.hpp"
+#include "app/EnrollmentSession.hpp"
+#include "app/RecognitionResults.hpp"
 #include "camera/FrameBuffer.hpp"
 #include "core/Types.hpp"
 #include "face/FaceAligner.hpp"
@@ -10,9 +12,12 @@
 #include "face/Recognizer.hpp"
 #include "inference/OnnxRuntimeCpuEngine.hpp"
 
+#include <atomic>
 #include <memory>
+#include <mutex>
 #include <opencv2/core.hpp>
 #include <optional>
+#include <thread>
 #include <vector>
 
 namespace ccamera {
@@ -23,9 +28,10 @@ public:
     int run();
 
 private:
-    std::vector<RecognitionResult> process_frame(const cv::Mat& image);
+    std::vector<RecognitionResult> process_frame(const Frame& frame);
+    void recognition_loop();
     void apply_commands(bool& running);
-    void handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces);
+    void handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces, Clock::time_point now);
 
     AppConfig config_;
     FrameBuffer frame_buffer_;
@@ -37,8 +43,11 @@ private:
     FaceDatabase database_;
     Recognizer recognizer_;
     CommandLoop command_loop_;
-    std::optional<std::string> enrollment_name_;
-    std::vector<FaceEmbedding> enrollment_samples_;
+    EnrollmentSession enrollment_session_;
+    std::atomic<bool> recognition_running_{false};
+    std::thread recognition_thread_;
+    RecognitionResultsStore recognition_results_;
+    std::uint64_t last_processed_sequence_ = 0;
 };
 
 }  // namespace ccamera

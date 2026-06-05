@@ -8,6 +8,7 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <thread>
 #include <utility>
 
 namespace ccamera {
@@ -20,7 +21,8 @@ AppController::AppController(AppConfig config)
       aligner_(),
       extractor_(recognizer_engine_),
       database_(config_.database_path),
-      recognizer_(config_.recognition_threshold) {
+      recognizer_(config_.recognition_threshold),
+      enrollment_session_(config_) {
     database_.load_or_create();
 }
 
@@ -31,8 +33,7 @@ void AppController::apply_commands(bool& running) {
         if (command.type == CommandType::Quit) {
             running = false;
         } else if (command.type == CommandType::Enroll) {
-            enrollment_name_ = command.name;
-            enrollment_samples_.clear();
+            enrollment_session_.start(command.name, Clock::now());
         } else if (command.type == CommandType::Delete) {
             database_.delete_person(command.name);
             database_.save();
@@ -77,8 +78,11 @@ void AppController::apply_commands(bool& running) {
     }
 }
 
-void AppController::handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces) {
-    if (!enrollment_name_.has_value()) {
+void AppController::handle_enrollment(
+    const cv::Mat& image,
+    const std::vector<FaceDetection>& faces,
+    Clock::time_point now) {
+    if (!enrollment_session_.active()) {
         return;
     }
     if (faces.size() != 1) {
@@ -87,37 +91,37 @@ void AppController::handle_enrollment(const cv::Mat& image, const std::vector<Fa
 
     try {
         const cv::Mat aligned = aligner_.align(image, faces.front());
-        enrollment_samples_.push_back(extractor_.extract(aligned));
-
-        if (static_cast<int>(enrollment_samples_.size()) >= config_.enrollment_sample_count) {
-            FaceEmbedding averaged = average_embeddings(enrollment_samples_);
-            database_.upsert_person(*enrollment_name_, averaged);
+        const FaceEmbedding sample = extractor_.extract(aligned);
+        const EnrollmentUpdate update = enrollment_session_.add_sample(sample, now);
+        if (update.status == EnrollmentStatus::Completed && update.embedding.has_value()) {
+            database_.upsert_person(update.name, *update.embedding);
             database_.save();
-            enrollment_name_.reset();
-            enrollment_samples_.clear();
+        } else if (update.status == EnrollmentStatus::RejectedInconsistent) {
+            std::cerr << "Enrollment sample rejected for " << update.name << ": inconsistent embedding\n";
+        } else if (update.status == EnrollmentStatus::TimedOut) {
+            std::cerr << "Enrollment timed out for " << update.name << '\n';
         }
     } catch (const std::exception& error) {
-        std::cerr << "Enrollment failed for " << *enrollment_name_ << ": " << error.what() << '\n';
-        enrollment_samples_.clear();
+        std::cerr << "Enrollment failed: " << error.what() << '\n';
     } catch (...) {
-        std::cerr << "Enrollment failed for " << *enrollment_name_ << ": unknown error\n";
-        enrollment_samples_.clear();
+        std::cerr << "Enrollment failed: unknown error\n";
     }
 }
 
-std::vector<RecognitionResult> AppController::process_frame(const cv::Mat& image) {
+std::vector<RecognitionResult> AppController::process_frame(const Frame& frame) {
     std::vector<RecognitionResult> results;
-    const auto faces = detector_.detect(image);
+    const auto faces = detector_.detect(frame.image);
 
-    handle_enrollment(image, faces);
+    handle_enrollment(frame.image, faces, Clock::now());
 
     const auto db_snapshot = database_.snapshot();
 
     for (const auto& face : faces) {
         RecognitionResult result;
         result.detection = face;
+        result.frame_sequence = frame.sequence;
         try {
-            const cv::Mat aligned = aligner_.align(image, face);
+            const cv::Mat aligned = aligner_.align(frame.image, face);
             const FaceEmbedding embedding = extractor_.extract(aligned);
             const MatchResult match = recognizer_.match(embedding, db_snapshot);
             result.label = match.label;
@@ -134,11 +138,32 @@ std::vector<RecognitionResult> AppController::process_frame(const cv::Mat& image
     return results;
 }
 
+void AppController::recognition_loop() {
+    while (recognition_running_) {
+        const auto frame = frame_buffer_.latest();
+        if (!frame.has_value() || frame->sequence == last_processed_sequence_) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+
+        last_processed_sequence_ = frame->sequence;
+        const bool ok = run_recognition_step(recognition_results_, frame->sequence, [&] {
+            return process_frame(*frame);
+        });
+        if (!ok) {
+            const auto status = recognition_results_.status();
+            std::cerr << "Recognition failed on frame " << status.sequence << ": " << status.last_error << '\n';
+        }
+    }
+}
+
 int AppController::run() {
     CameraCapture camera(config_, frame_buffer_);
     PreviewWindow preview("CCamera");
 
     camera.start();
+    recognition_running_ = true;
+    recognition_thread_ = std::thread(&AppController::recognition_loop, this);
     command_loop_.start();
 
     bool running = true;
@@ -157,8 +182,7 @@ int AppController::run() {
             }
             last_tick = now;
 
-            const auto results = process_frame(frame->image);
-            preview.show(frame->image, results, fps);
+            preview.show(frame->image, recognition_results_.results_for_sequence(frame->sequence), fps);
         }
 
         const int key = cv::waitKey(1);
@@ -167,6 +191,10 @@ int AppController::run() {
         }
     }
 
+    recognition_running_ = false;
+    if (recognition_thread_.joinable()) {
+        recognition_thread_.join();
+    }
     command_loop_.stop();
     camera.stop();
     return 0;

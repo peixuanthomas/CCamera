@@ -41,6 +41,14 @@ struct RecognitionResult {
     std::string label = "Unknown";
     float similarity = 0.0f;
     bool known = false;
+    std::uint64_t frame_sequence = 0;
+};
+
+struct CameraStatus {
+    bool running = false;
+    bool opened = false;
+    std::uint64_t frames_captured = 0;
+    std::string last_error;
 };
 
 struct AppConfig {

@@ -33,9 +33,13 @@ add_library(ccamera_core
 )
 
 target_sources(ccamera_core PRIVATE
+    src/app/AppConfig.cpp
     src/app/AppController.cpp
     src/app/CommandLoop.cpp
+    src/app/EnrollmentSession.cpp
+    src/app/RecognitionResults.cpp
     src/camera/CameraCapture.cpp
+    src/camera/CameraCaptureDefault.cpp
     src/camera/FrameBuffer.cpp
     src/face/FaceAligner.cpp
     src/face/FaceDatabase.cpp
@@ -126,4 +130,37 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_command_loop tests/test_command_loop.cpp)
     target_link_libraries(test_command_loop PRIVATE ccamera_core)
     add_test(NAME test_command_loop COMMAND test_command_loop)
+
+    add_executable(test_app_config tests/test_app_config.cpp)
+    target_link_libraries(test_app_config PRIVATE ccamera_core)
+    add_test(NAME test_app_config COMMAND test_app_config)
+    set_tests_properties(test_app_config PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+
+    add_executable(test_camera_capture_status tests/test_camera_capture_status.cpp)
+    target_link_libraries(test_camera_capture_status PRIVATE ccamera_core)
+    add_test(
+        NAME test_camera_capture_status
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_camera_capture_status>
+    )
+
+    add_executable(test_enrollment_session tests/test_enrollment_session.cpp)
+    target_link_libraries(test_enrollment_session PRIVATE ccamera_core)
+    add_test(
+        NAME test_enrollment_session
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_enrollment_session>
+    )
+
+    add_executable(test_recognition_results tests/test_recognition_results.cpp)
+    target_link_libraries(test_recognition_results PRIVATE ccamera_core)
+    add_test(NAME test_recognition_results COMMAND test_recognition_results)
+
+    add_executable(test_model_contracts tests/test_model_contracts.cpp)
+    target_link_libraries(test_model_contracts PRIVATE ccamera_core)
+    add_test(NAME test_model_contracts COMMAND test_model_contracts)
 endif()

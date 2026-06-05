@@ -1,6 +1,7 @@
 #include "face/FaceFeatureExtractor.hpp"
 
 #include "core/Math.hpp"
+#include "face/ModelContracts.hpp"
 
 #include <stdexcept>
 
@@ -43,6 +44,14 @@ std::size_t validate_embedding_output(const Tensor& tensor) {
 FaceFeatureExtractor::FaceFeatureExtractor(InferenceEngine& engine) : engine_(engine) {}
 
 FaceEmbedding FaceFeatureExtractor::extract(const cv::Mat& aligned_face) {
+    if (aligned_face.empty()) {
+        throw std::runtime_error("recognizer input face is empty");
+    }
+    if (aligned_face.channels() <= 0) {
+        throw std::runtime_error("recognizer input face must have channels");
+    }
+
+    const auto contract = recognizer_model_contract();
     cv::Mat float_face;
     aligned_face.convertTo(float_face, CV_32F);
 
@@ -65,10 +74,12 @@ FaceEmbedding FaceFeatureExtractor::extract(const cv::Mat& aligned_face) {
         }
     }
 
-    const auto outputs = engine_.run({{"face", input}});
-    const auto found = outputs.find("embedding");
+    validate_tensor_shape_and_values(contract.input_name, input);
+
+    const auto outputs = engine_.run({{contract.input_name, input}});
+    const auto found = outputs.find(contract.output_name);
     if (found == outputs.end()) {
-        throw std::runtime_error("recognizer output 'embedding' is missing");
+        throw std::runtime_error("recognizer output '" + contract.output_name + "' is missing");
     }
     validate_embedding_output(found->second);
 
