@@ -36,13 +36,22 @@ On Windows, `ccamera.exe` is a lightweight launcher. It validates the config and
 1. Place compatible detector and recognizer ONNX files in `models/`.
 2. Configure dependency paths with CMake.
 3. Build the executable.
-4. Run `ccamera.exe --config config/app.example.json`, or omit `--config` to use built-in defaults.
+4. Run `ccamera.exe` to open the startup window, or keep using `ccamera.exe --config config/app.example.json` for command-line startup.
 
-If model files are missing, the launcher reports the missing model path before loading camera or GUI dependencies.
+The startup window lets you load a JSON config, choose detector and recognizer ONNX files, choose the face database path, edit the camera index, and adjust common detection/enrollment settings before pressing Start.
+
+If model files are missing, the launcher reports the missing model path before loading camera or preview dependencies.
 
 The preview window draws rectangles around detected faces and red points on detected face keypoints. The command line accepts `enroll <name>`, `delete <name>`, `list`, and `quit`.
 
-Press `Q` or `Esc` in the preview window to close the app.
+The preview window also includes a right-side control panel:
+
+- `Enroll`: type a name in the preview window and press Enter to start live enrollment.
+- `Delete`: type a name in the preview window and press Enter to remove that identity.
+- `List`: prints enrolled identities to the console; the panel also shows enrolled names and template counts.
+- `Quit`: stops the app.
+
+Press `Q` or `Esc` in the preview window to close the app when the panel is not asking for a name. Press `Esc` while entering a name to cancel that input.
 
 ## Offline Virtual Dataset Test
 

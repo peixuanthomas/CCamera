@@ -1,10 +1,12 @@
 #include "app/AppConfig.hpp"
+#include "ui/StartupWindow.hpp"
 
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -39,6 +41,50 @@ void validate_runtime_inputs(const ccamera::AppConfig& config) {
     require_existing_file("detector model", config.detector_model);
     require_existing_file("recognizer model", config.recognizer_model);
 }
+
+ccamera::AppConfig default_startup_config() {
+    const std::string example_path = "config/app.example.json";
+    if (std::filesystem::exists(example_path)) {
+        try {
+            return ccamera::load_app_config(example_path);
+        } catch (const std::exception&) {
+        }
+    }
+    ccamera::AppConfig config;
+    ccamera::validate_app_config(config);
+    return config;
+}
+
+std::filesystem::path temporary_startup_config_path() {
+    const auto ticks = ccamera::Clock::now().time_since_epoch().count();
+    return std::filesystem::temp_directory_path() / ("ccamera-startup-" + std::to_string(ticks) + ".json");
+}
+
+std::vector<char*> mutable_argv(std::vector<std::string>& args) {
+    std::vector<char*> result;
+    result.reserve(args.size());
+    for (auto& arg : args) {
+        result.push_back(arg.data());
+    }
+    return result;
+}
+
+class TemporaryConfigCleanup {
+public:
+    void set(std::filesystem::path path) {
+        path_ = std::move(path);
+    }
+
+    ~TemporaryConfigCleanup() {
+        if (!path_.empty()) {
+            std::error_code ignored;
+            std::filesystem::remove(path_, ignored);
+        }
+    }
+
+private:
+    std::filesystem::path path_;
+};
 
 #ifdef _WIN32
 std::string windows_error_message(DWORD error_code) {
@@ -160,7 +206,32 @@ int run_runtime_module(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     try {
-        ccamera::AppConfig config = ccamera::load_app_config_from_args(argc, argv);
+        std::vector<std::string> generated_args;
+        std::vector<char*> generated_argv;
+        TemporaryConfigCleanup temporary_config;
+
+        ccamera::AppConfig config;
+        if (argc <= 1) {
+            const auto selected_config = ccamera::show_startup_window(default_startup_config());
+            if (!selected_config.has_value()) {
+                return 0;
+            }
+            config = *selected_config;
+            const std::filesystem::path generated_config_path = temporary_startup_config_path();
+            ccamera::save_app_config(generated_config_path.string(), config);
+            temporary_config.set(generated_config_path);
+            generated_args = {
+                argv != nullptr && argv[0] != nullptr ? argv[0] : "ccamera.exe",
+                "--config",
+                generated_config_path.string(),
+            };
+            generated_argv = mutable_argv(generated_args);
+            argc = static_cast<int>(generated_argv.size());
+            argv = generated_argv.data();
+        } else {
+            config = ccamera::load_app_config_from_args(argc, argv);
+        }
+
         validate_runtime_inputs(config);
         return run_runtime_module(argc, argv);
     } catch (const std::exception& error) {

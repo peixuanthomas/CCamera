@@ -60,6 +60,19 @@ int main() {
     assert(override_config.detector_model == "models/custom_detector.onnx");
     assert(override_config.enrollment_sample_count == 3);
 
+    const auto saved_path = std::filesystem::temp_directory_path() / "ccamera_saved_config.json";
+    ccamera::save_app_config(saved_path.string(), override_config);
+    const auto saved_config = ccamera::load_app_config(saved_path.string());
+    assert(saved_config.camera_index == 2);
+    assert(saved_config.frame_width == 640);
+    assert(saved_config.frame_height == 480);
+    assert(saved_config.detector_model == "models/custom_detector.onnx");
+    assert(saved_config.recognizer_model == "models/custom_recognizer.onnx");
+    assert(saved_config.database_path == "data/custom_db.json");
+    assert(saved_config.detection_threshold == 0.8f);
+    assert(saved_config.recognition_threshold == 0.3f);
+    assert(saved_config.enrollment_sample_count == 3);
+
     const std::string override_path_text = override_path.string();
     const char* argv_with_flag[] = {"ccamera.exe", "--config", override_path_text.c_str()};
     const auto argv_config = ccamera::load_app_config_from_args(3, const_cast<char**>(argv_with_flag));
@@ -88,5 +101,6 @@ int main() {
         "enrollment_timeout_seconds");
 
     std::filesystem::remove(override_path);
+    std::filesystem::remove(saved_path);
     return 0;
 }

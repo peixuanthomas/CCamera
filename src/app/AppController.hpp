@@ -30,6 +30,7 @@ public:
 private:
     std::vector<RecognitionResult> process_frame(const Frame& frame);
     void recognition_loop();
+    void apply_command(const Command& command, bool& running);
     void apply_commands(bool& running);
     void handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces, Clock::time_point now);
 

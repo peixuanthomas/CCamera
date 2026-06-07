@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 
@@ -84,6 +85,37 @@ AppConfig load_app_config(const std::string& path) {
 
     validate_app_config(config);
     return config;
+}
+
+void save_app_config(const std::string& path, const AppConfig& config) {
+    validate_app_config(config);
+
+    const auto parent = std::filesystem::path(path).parent_path();
+    if (!parent.empty()) {
+        std::filesystem::create_directories(parent);
+    }
+
+    nlohmann::json json;
+    json["camera_index"] = config.camera_index;
+    json["frame_width"] = config.frame_width;
+    json["frame_height"] = config.frame_height;
+    json["detector_model"] = config.detector_model;
+    json["recognizer_model"] = config.recognizer_model;
+    json["database_path"] = config.database_path;
+    json["inference_backend"] = config.inference_backend;
+    json["detection_interval"] = config.detection_interval;
+    json["detection_threshold"] = config.detection_threshold;
+    json["recognition_threshold"] = config.recognition_threshold;
+    json["enrollment_consistency_threshold"] = config.enrollment_consistency_threshold;
+    json["enrollment_sample_count"] = config.enrollment_sample_count;
+    json["enrollment_timeout_seconds"] = config.enrollment_timeout_seconds;
+    json["feature_worker_count"] = config.feature_worker_count;
+
+    std::ofstream out(path);
+    if (!out) {
+        throw std::runtime_error("failed to open app config for writing: " + path);
+    }
+    out << json.dump(2) << '\n';
 }
 
 AppConfig load_app_config_from_args(int argc, char** argv) {

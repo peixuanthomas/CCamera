@@ -2567,6 +2567,22 @@ Code-quality re-review fix note 2026-06-07: The runtime startup probe now reject
 
 ---
 
+### Simple Interactive GUI Support
+
+- [x] **Step 1: Preserve command-line startup while adding no-argument startup UI**
+
+Progress note 2026-06-08: Added a lightweight Windows startup window for `ccamera.exe` when launched without arguments. The window can load a JSON config, browse for detector/recognizer ONNX files, choose a database path, edit camera/frame/threshold/enrollment fields, and writes a temporary config before launching the existing runtime module. Existing command-line startup with `--config` or a positional config path is unchanged. Automated coverage added `save_app_config()` round-trip assertions in `test_app_config`.
+
+- [x] **Step 2: Add preview-window runtime controls**
+
+Progress note 2026-06-08: Added an OpenCV-drawn right-side control panel in the preview window with Enroll, Delete, List, and Quit controls. Enroll/Delete prompt for a name through preview-window keyboard input and dispatch the same command types used by the existing command loop; the panel also shows enrolled identities from the database snapshot. `test_runtime_controls` covers button hit-testing, text entry, Enter dispatch, Backspace, Esc cancel, List, and Quit command generation.
+
+- [ ] **Step 3: Run manual GUI, camera, and model verification**
+
+Manual startup-window, live preview control, camera, and real ONNX model checks were not run in this workspace. Do not mark camera preview, face rectangles/keypoints, enrollment, recognition, or GUI button behavior as manually passed until they are tested with compatible model files and camera hardware.
+
+---
+
 ## Final Acceptance Checklist
 
 - [x] CMake configure succeeds with OpenCV, ONNX Runtime, and nlohmann/json available.

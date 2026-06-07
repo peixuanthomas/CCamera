@@ -291,6 +291,7 @@ target_sources(ccamera_core PRIVATE
     src/face/FaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
     src/inference/OnnxRuntimeCpuEngine.cpp
+    src/ui/RuntimeControls.cpp
     src/ui/PreviewOverlay.cpp
 )
 
@@ -324,11 +325,18 @@ target_link_libraries(ccamera_core PUBLIC
 
 add_executable(ccamera
     src/main.cpp
+    src/ui/StartupWindow.cpp
 )
 
 target_link_libraries(ccamera PRIVATE
     ccamera_config
 )
+
+if (WIN32)
+    target_link_libraries(ccamera PRIVATE
+        comdlg32
+    )
+endif()
 
 target_compile_definitions(ccamera PRIVATE
     "CCAMERA_RUNTIME_MODULE_NAME=\"$<TARGET_FILE_NAME:ccamera_runtime>\""
@@ -490,6 +498,10 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_recognition_results tests/test_recognition_results.cpp)
     target_link_libraries(test_recognition_results PRIVATE ccamera_core)
     add_test(NAME test_recognition_results COMMAND test_recognition_results)
+
+    add_executable(test_runtime_controls tests/test_runtime_controls.cpp)
+    target_link_libraries(test_runtime_controls PRIVATE ccamera_core)
+    add_test(NAME test_runtime_controls COMMAND test_runtime_controls)
 
     add_executable(test_model_contracts tests/test_model_contracts.cpp)
     target_link_libraries(test_model_contracts PRIVATE ccamera_core)

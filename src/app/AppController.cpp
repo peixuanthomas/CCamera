@@ -28,29 +28,29 @@ AppController::AppController(AppConfig config)
     database_.load_or_create();
 }
 
+void AppController::apply_command(const Command& command, bool& running) {
+    if (command.type == CommandType::Quit) {
+        running = false;
+    } else if (command.type == CommandType::Enroll) {
+        enrollment_session_.start(command.name, Clock::now());
+    } else if (command.type == CommandType::Delete) {
+        database_.delete_person(command.name);
+        database_.save();
+    } else if (command.type == CommandType::List) {
+        const auto snapshot = database_.snapshot();
+        for (const auto& person : snapshot.people) {
+            std::cout << person.name << " (" << person.templates.size() << " templates)\n";
+        }
+    }
+}
+
 void AppController::apply_commands(bool& running) {
     const CommandState commands = command_loop_.consume();
-
-    const auto apply_one = [this, &running](const Command& command) {
-        if (command.type == CommandType::Quit) {
-            running = false;
-        } else if (command.type == CommandType::Enroll) {
-            enrollment_session_.start(command.name, Clock::now());
-        } else if (command.type == CommandType::Delete) {
-            database_.delete_person(command.name);
-            database_.save();
-        } else if (command.type == CommandType::List) {
-            const auto snapshot = database_.snapshot();
-            for (const auto& person : snapshot.people) {
-                std::cout << person.name << " (" << person.templates.size() << " templates)\n";
-            }
-        }
-    };
 
     if (!commands.commands.empty()) {
         for (const auto& command : commands.commands) {
             try {
-                apply_one(command);
+                apply_command(command, running);
             } catch (const std::exception& error) {
                 std::cerr << "Command failed: " << error.what() << '\n';
             } catch (...) {
@@ -62,16 +62,16 @@ void AppController::apply_commands(bool& running) {
 
     try {
         if (commands.quit_requested) {
-            apply_one({CommandType::Quit, {}});
+            apply_command({CommandType::Quit, {}}, running);
         }
         if (commands.enroll_name.has_value()) {
-            apply_one({CommandType::Enroll, *commands.enroll_name});
+            apply_command({CommandType::Enroll, *commands.enroll_name}, running);
         }
         if (commands.delete_name.has_value()) {
-            apply_one({CommandType::Delete, *commands.delete_name});
+            apply_command({CommandType::Delete, *commands.delete_name}, running);
         }
         if (commands.list_requested) {
-            apply_one({CommandType::List, {}});
+            apply_command({CommandType::List, {}}, running);
         }
     } catch (const std::exception& error) {
         std::cerr << "Command failed: " << error.what() << '\n';
@@ -172,11 +172,31 @@ int AppController::run() {
             }
             last_tick = now;
 
-            preview.show(frame->image, recognition_results_.results_for_sequence(frame->sequence), fps);
+            preview.show(
+                frame->image,
+                recognition_results_.results_for_sequence(frame->sequence),
+                database_.snapshot(),
+                fps);
+        }
+
+        for (const auto& command : preview.consume_commands()) {
+            try {
+                apply_command(command, running);
+            } catch (const std::exception& error) {
+                std::cerr << "Command failed: " << error.what() << '\n';
+            }
         }
 
         const int key = cv::waitKey(1);
-        if (key == 'q' || key == 'Q' || key == 27) {
+        const bool preview_was_accepting_text = preview.accepting_text_input();
+        for (const auto& command : preview.handle_key(key)) {
+            try {
+                apply_command(command, running);
+            } catch (const std::exception& error) {
+                std::cerr << "Command failed: " << error.what() << '\n';
+            }
+        }
+        if (!preview_was_accepting_text && (key == 'q' || key == 'Q' || key == 27)) {
             running = false;
         }
     }
