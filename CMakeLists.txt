@@ -116,6 +116,104 @@ function(ccamera_append_named_runtime_dll output_variable dll_name)
     set("${output_variable}" "${_current}" PARENT_SCOPE)
 endfunction()
 
+function(ccamera_is_windows_system_dll dll_name output_variable)
+    string(TOLOWER "${dll_name}" _dll_name_lower)
+    set(_is_system FALSE)
+
+    if (_dll_name_lower MATCHES "^(api-ms-win-|ext-ms-)"
+            OR _dll_name_lower MATCHES "^(advapi32|authz|avicap32|avrt|bcrypt|bcryptprimitives|cfgmgr32|comctl32|comdlg32|crypt32|d3d11|d3d12|dbghelp|dnsapi|dwmapi|dwrite|dxgi|gdi32|gdiplus|imm32|iphlpapi|kernel32|mpr|msimg32|msvcp140|msvcp140_1|msvcrt|ncrypt|netapi32|ntdll|ole32|oleaut32|opengl32|powrprof|psapi|rpcrt4|secur32|setupapi|shell32|shlwapi|usp10|user32|userenv|uxtheme|vcruntime140|vcruntime140_1|version|wininet|winmm|winspool|ws2_32|wsock32|wtsapi32)\\.dll$")
+        set(_is_system TRUE)
+    endif()
+
+    set("${output_variable}" "${_is_system}" PARENT_SCOPE)
+endfunction()
+
+function(ccamera_find_runtime_dll output_variable dll_name)
+    set(_runtime_dll)
+    foreach (_runtime_search_dir IN LISTS CCAMERA_RUNTIME_SEARCH_DIRS)
+        if (EXISTS "${_runtime_search_dir}/${dll_name}")
+            set(_runtime_dll "${_runtime_search_dir}/${dll_name}")
+            break()
+        endif()
+    endforeach()
+
+    set("${output_variable}" "${_runtime_dll}" PARENT_SCOPE)
+endfunction()
+
+function(ccamera_read_imported_dll_names output_variable dll_path)
+    set(_imports)
+    if (NOT CMAKE_OBJDUMP)
+        set("${output_variable}" "${_imports}" PARENT_SCOPE)
+        return()
+    endif()
+
+    execute_process(
+        COMMAND "${CMAKE_OBJDUMP}" -p "${dll_path}"
+        RESULT_VARIABLE _objdump_result
+        OUTPUT_VARIABLE _objdump_output
+        ERROR_VARIABLE _objdump_error
+    )
+
+    if (NOT _objdump_result EQUAL 0)
+        message(WARNING "Failed to inspect runtime DLL imports for ${dll_path}: ${_objdump_error}")
+        set("${output_variable}" "${_imports}" PARENT_SCOPE)
+        return()
+    endif()
+
+    string(REGEX MATCHALL "DLL Name: [^\r\n]+" _matches "${_objdump_output}")
+    foreach (_match IN LISTS _matches)
+        string(REGEX REPLACE "^DLL Name: +" "" _import "${_match}")
+        if (NOT _import STREQUAL "")
+            list(APPEND _imports "${_import}")
+        endif()
+    endforeach()
+
+    list(REMOVE_DUPLICATES _imports)
+    set("${output_variable}" "${_imports}" PARENT_SCOPE)
+endfunction()
+
+function(ccamera_collect_transitive_runtime_dlls found_variable missing_variable)
+    set(_queue ${ARGN})
+    set(_visited)
+    set(_found)
+    set(_missing)
+
+    while (_queue)
+        list(POP_FRONT _queue _dll_path)
+        if (NOT EXISTS "${_dll_path}")
+            continue()
+        endif()
+
+        get_filename_component(_dll_name "${_dll_path}" NAME)
+        string(TOLOWER "${_dll_name}" _dll_key)
+        if (_dll_key IN_LIST _visited)
+            continue()
+        endif()
+        list(APPEND _visited "${_dll_key}")
+
+        ccamera_read_imported_dll_names(_imports "${_dll_path}")
+        foreach (_import_name IN LISTS _imports)
+            ccamera_is_windows_system_dll("${_import_name}" _is_system)
+            if (_is_system)
+                continue()
+            endif()
+
+            ccamera_find_runtime_dll(_import_path "${_import_name}")
+            if (_import_path)
+                list(APPEND _found "${_import_path}")
+                list(APPEND _queue "${_import_path}")
+            else()
+                list(APPEND _missing "${_import_name}")
+            endif()
+        endforeach()
+    endwhile()
+
+    list(REMOVE_DUPLICATES _found)
+    list(REMOVE_DUPLICATES _missing)
+    set("${found_variable}" "${_found}" PARENT_SCOPE)
+    set("${missing_variable}" "${_missing}" PARENT_SCOPE)
+endfunction()
+
 set(CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES)
 if (WIN32)
     foreach (_opencv_runtime_target IN ITEMS
@@ -293,6 +391,25 @@ if (WIN32)
 endif()
 list(REMOVE_DUPLICATES CCAMERA_REQUIRED_RUNTIME_DLLS)
 
+set(CCAMERA_UNRESOLVED_RUNTIME_DLLS)
+if (WIN32 AND CMAKE_OBJDUMP AND CCAMERA_REQUIRED_RUNTIME_DLLS)
+    ccamera_collect_transitive_runtime_dlls(
+        CCAMERA_TRANSITIVE_RUNTIME_DLLS
+        CCAMERA_UNRESOLVED_RUNTIME_DLLS
+        ${CCAMERA_REQUIRED_RUNTIME_DLLS}
+    )
+    list(APPEND CCAMERA_REQUIRED_RUNTIME_DLLS ${CCAMERA_TRANSITIVE_RUNTIME_DLLS})
+    list(REMOVE_DUPLICATES CCAMERA_REQUIRED_RUNTIME_DLLS)
+
+    foreach (_runtime_dll IN LISTS CCAMERA_TRANSITIVE_RUNTIME_DLLS)
+        get_filename_component(_runtime_dll_name "${_runtime_dll}" NAME)
+        list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES "${_runtime_dll_name}")
+    endforeach()
+    list(REMOVE_DUPLICATES CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES)
+elseif (WIN32 AND NOT CMAKE_OBJDUMP)
+    message(WARNING "CMAKE_OBJDUMP is unavailable; transitive Windows runtime DLL deployment cannot be inspected")
+endif()
+
 if (WIN32 AND CCAMERA_REQUIRED_RUNTIME_DLLS)
     add_custom_command(TARGET ccamera_runtime POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -397,6 +514,7 @@ if (CCAMERA_BUILD_TESTS)
             COMMAND ${CMAKE_COMMAND}
                 -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
                 "-DCCAMERA_REQUIRED_DLLS=${CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES}"
+                "-DCCAMERA_UNRESOLVED_DLLS=${CCAMERA_UNRESOLVED_RUNTIME_DLLS}"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckRuntimeDeployment.cmake"
         )
         add_test(
@@ -415,6 +533,7 @@ if (CCAMERA_BUILD_TESTS)
                 -DCCAMERA_WORKING_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}
                 -DCCAMERA_STARTUP_MODE=runtime
                 -DCCAMERA_STARTUP_PROBE_DIR=${CMAKE_CURRENT_BINARY_DIR}/startup-runtime-probe
+                -DCCAMERA_REJECT_RUNTIME_MODULE_LOAD_FAILURE=ON
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
         )
         add_test(

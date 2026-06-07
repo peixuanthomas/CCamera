@@ -82,8 +82,18 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
             "result=${_result}; stdout='${_output}'; stderr='${_error}'"
         )
     endif()
+    set(_runtime_module_error FALSE)
     if (_error MATCHES "ccamera: failed to load runtime module"
-            OR _error MATCHES "ccamera:")
+            OR _error MATCHES "ccamera: failed to find ccamera_run_app")
+        set(_runtime_module_error TRUE)
+    endif()
+    if (CCAMERA_REJECT_RUNTIME_MODULE_LOAD_FAILURE AND _runtime_module_error)
+        message(FATAL_ERROR
+            "Runtime startup probe failed before downstream app/model handling. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+    if (_error MATCHES "ccamera:")
         message(STATUS "Executable reached runtime-load path or controlled application error: ${_error}")
         return()
     endif()

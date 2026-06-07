@@ -29,7 +29,7 @@ On Windows, use semicolon-separated entries in `CMAKE_PREFIX_PATH` when OpenCV a
 
 When project-local dependencies exist under `third_party`, CMake uses them as fallback hints. The bundled MSYS2 OpenCV and nlohmann/json prefix is only used for MinGW builds, and explicit `OpenCV_DIR`, `ONNXRUNTIME_ROOT`, or `CMAKE_PREFIX_PATH` values take precedence.
 
-On Windows, `ccamera.exe` is a lightweight launcher. It validates the config and model paths first, then loads `ccamera_runtime.dll`, which owns the camera and preview-window path. The build deploys the configured OpenCV runtime DLLs, the configured ONNX Runtime DLL, and the MinGW runtime DLLs beside the executable. If an OpenCV build depends on additional GUI, codec, or video backend DLLs, the launcher reports a runtime-module load error instead of failing before application startup.
+On Windows, `ccamera.exe` is a lightweight launcher. It validates the config and model paths first, then loads `ccamera_runtime.dll`, which owns the camera and preview-window path. The build deploys the configured OpenCV runtime DLLs, the configured ONNX Runtime DLL, the MinGW runtime DLLs, and transitive DLL imports resolved from the configured prefixes beside the executable. The configured prefixes must contain the full OpenCV GUI/video backend runtime set, including any Qt, FFmpeg, GStreamer, image-codec, and secondary codec DLLs imported by that OpenCV build. CTest reports unresolved transitive DLL names when they are absent from the configured prefixes.
 
 ## Running
 

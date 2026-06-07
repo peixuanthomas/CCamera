@@ -13,6 +13,14 @@ endif()
 get_filename_component(_target_dir "${CCAMERA_TARGET_FILE}" DIRECTORY)
 set(_missing)
 
+if (DEFINED CCAMERA_UNRESOLVED_DLLS AND NOT CCAMERA_UNRESOLVED_DLLS STREQUAL "")
+    set(_unresolved ${CCAMERA_UNRESOLVED_DLLS})
+    list(REMOVE_DUPLICATES _unresolved)
+    message(FATAL_ERROR
+        "Runtime DLL(s) imported by deployed DLLs were not found in configured prefixes: ${_unresolved}"
+    )
+endif()
+
 foreach (_dll IN LISTS CCAMERA_REQUIRED_DLLS)
     if (_dll STREQUAL "")
         continue()
