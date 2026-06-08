@@ -46,7 +46,7 @@ void validate_app_config(const AppConfig& config) {
     require_non_empty("detector_model", config.detector_model);
     require_non_empty("recognizer_model", config.recognizer_model);
     require_non_empty("database_path", config.database_path);
-    if (config.inference_backend != "onnxruntime_cpu") {
+    if (config.inference_backend != "onnxruntime_cpu" && config.inference_backend != "opencv_zoo") {
         throw std::invalid_argument("unknown inference_backend: " + config.inference_backend);
     }
     require_positive("detection_interval", config.detection_interval);

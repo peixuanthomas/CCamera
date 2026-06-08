@@ -33,7 +33,11 @@ int main() {
     assert(example.camera_index == 0);
     assert(example.frame_width == 1280);
     assert(example.frame_height == 720);
-    assert(example.inference_backend == "onnxruntime_cpu");
+    assert(example.inference_backend == "opencv_zoo");
+    assert(example.detector_model == "models/opencv_zoo/face_detection_yunet_2023mar.onnx");
+    assert(example.recognizer_model == "models/opencv_zoo/face_recognition_sface_2021dec.onnx");
+    assert(std::filesystem::exists(example.detector_model));
+    assert(std::filesystem::exists(example.recognizer_model));
     assert(example.enrollment_consistency_threshold == 0.55f);
 
     const auto override_path = write_config(
@@ -59,6 +63,7 @@ int main() {
     assert(override_config.frame_width == 640);
     assert(override_config.detector_model == "models/custom_detector.onnx");
     assert(override_config.enrollment_sample_count == 3);
+    assert(override_config.inference_backend == "onnxruntime_cpu");
 
     const auto saved_path = std::filesystem::temp_directory_path() / "ccamera_saved_config.json";
     ccamera::save_app_config(saved_path.string(), override_config);
@@ -77,6 +82,14 @@ int main() {
     const char* argv_with_flag[] = {"ccamera.exe", "--config", override_path_text.c_str()};
     const auto argv_config = ccamera::load_app_config_from_args(3, const_cast<char**>(argv_with_flag));
     assert(argv_config.frame_width == 640);
+
+    {
+        ccamera::AppConfig config;
+        config.inference_backend = "opencv_zoo";
+        ccamera::validate_app_config(config);
+        config.inference_backend = "onnxruntime_cpu";
+        ccamera::validate_app_config(config);
+    }
 
     expect_invalid_config(
         [] {

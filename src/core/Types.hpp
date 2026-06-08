@@ -55,10 +55,10 @@ struct AppConfig {
     int camera_index = 0;
     int frame_width = 1280;
     int frame_height = 720;
-    std::string detector_model = "models/face_detector.onnx";
-    std::string recognizer_model = "models/face_recognizer.onnx";
+    std::string detector_model = "models/opencv_zoo/face_detection_yunet_2023mar.onnx";
+    std::string recognizer_model = "models/opencv_zoo/face_recognition_sface_2021dec.onnx";
     std::string database_path = "data/face_db.json";
-    std::string inference_backend = "onnxruntime_cpu";
+    std::string inference_backend = "opencv_zoo";
     int detection_interval = 3;
     float detection_threshold = 0.7f;
     float recognition_threshold = 0.45f;

@@ -86,7 +86,7 @@ Modify:
 - Modify: `tests/test_app_config.cpp`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Add failing default-config assertions**
+- [x] **Step 1: Add failing default-config assertions**
 
 Edit `tests/test_app_config.cpp`. Replace the initial example assertions with:
 
@@ -139,7 +139,7 @@ with:
         "inference_backend");
 ```
 
-- [ ] **Step 2: Run the focused test and verify it fails**
+- [x] **Step 2: Run the focused test and verify it fails**
 
 Run:
 
@@ -150,7 +150,7 @@ ctest --test-dir build -C Debug -R test_app_config --output-on-failure
 
 Expected: `test_app_config` fails because `config/app.example.json` still uses `onnxruntime_cpu` and the OpenCV Zoo model files do not exist.
 
-- [ ] **Step 3: Add model files and source/license docs**
+- [x] **Step 3: Add model files and source/license docs**
 
 Run these commands from the repository root:
 
@@ -184,7 +184,7 @@ This directory contains default models used by CCamera's `opencv_zoo` backend.
 These files are committed so the default Windows build can run without asking the user to provide model files.
 ```
 
-- [ ] **Step 4: Update default config and defaults**
+- [x] **Step 4: Update default config and defaults**
 
 Update `config/app.example.json`:
 
@@ -224,7 +224,7 @@ Update `validate_app_config()` in `src/app/AppConfig.cpp`:
     }
 ```
 
-- [ ] **Step 5: Update model README**
+- [x] **Step 5: Update model README**
 
 Replace `models/README.md` with:
 
@@ -241,7 +241,7 @@ See `models/opencv_zoo/SOURCES.md` for original source URLs and license notes.
 Custom ONNX Runtime models are still supported through `--config`, but they must match the custom `onnxruntime_cpu` contract documented in the project README.
 ```
 
-- [ ] **Step 6: Verify focused test passes**
+- [x] **Step 6: Verify focused test passes**
 
 Run:
 
@@ -252,7 +252,7 @@ ctest --test-dir build -C Debug -R test_app_config --output-on-failure
 
 Expected: `test_app_config` passes.
 
-- [ ] **Step 7: Update discoveries**
+- [x] **Step 7: Update discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -260,7 +260,7 @@ Append to `docs/discoveries.md`:
 - 2026-06-08: OpenCV Zoo default model assets were added under `models/opencv_zoo`: YuNet `face_detection_yunet_2023mar.onnx` with MIT license text and SFace `face_recognition_sface_2021dec.onnx` with Apache 2.0 license text. `config/app.example.json` and `AppConfig` defaults now point at these files and use `inference_backend: "opencv_zoo"`, while `onnxruntime_cpu` remains accepted for custom configs. Focused `test_app_config` verification passed. No live camera/model manual checks were run.
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Run:
 
