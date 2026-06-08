@@ -32,10 +32,22 @@ foreach (_dll IN LISTS CCAMERA_REQUIRED_DLLS)
     endif()
 endforeach()
 
+if (DEFINED CCAMERA_REQUIRED_RELATIVE_PATHS)
+    foreach (_relative_path IN LISTS CCAMERA_REQUIRED_RELATIVE_PATHS)
+        if (_relative_path STREQUAL "")
+            continue()
+        endif()
+
+        if (NOT EXISTS "${_target_dir}/${_relative_path}")
+            list(APPEND _missing "${_relative_path}")
+        endif()
+    endforeach()
+endif()
+
 if (_missing)
     list(REMOVE_DUPLICATES _missing)
     message(FATAL_ERROR
-        "Missing runtime DLL(s) beside ${CCAMERA_TARGET_FILE}: ${_missing}"
+        "Missing runtime file(s) beside ${CCAMERA_TARGET_FILE}: ${_missing}"
     )
 endif()
 

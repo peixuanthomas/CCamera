@@ -2569,9 +2569,9 @@ Code-quality re-review fix note 2026-06-07: The runtime startup probe now reject
 
 ### Simple Interactive GUI Support
 
-- [x] **Step 1: Preserve command-line startup while adding no-argument startup UI**
+- [x] **Step 1: Preserve command-line startup and config save/load support**
 
-Progress note 2026-06-08: Added a lightweight Windows startup window for `ccamera.exe` when launched without arguments. The window can load a JSON config, browse for detector/recognizer ONNX files, choose a database path, edit camera/frame/threshold/enrollment fields, and writes a temporary config before launching the existing runtime module. Existing command-line startup with `--config` or a positional config path is unchanged. Automated coverage added `save_app_config()` round-trip assertions in `test_app_config`.
+Progress note 2026-06-08: Config save/load support was added while preserving existing command-line startup with `--config` or a positional config path. The current no-argument `ccamera.exe` path loads the default runtime configuration directly and enters the existing runtime module instead of opening a separate configuration UI. Automated coverage added `save_app_config()` round-trip assertions in `test_app_config`.
 
 - [x] **Step 2: Add preview-window runtime controls**
 
@@ -2579,7 +2579,20 @@ Progress note 2026-06-08: Added an OpenCV-drawn right-side control panel in the 
 
 - [ ] **Step 3: Run manual GUI, camera, and model verification**
 
-Manual startup-window, live preview control, camera, and real ONNX model checks were not run in this workspace. Do not mark camera preview, face rectangles/keypoints, enrollment, recognition, or GUI button behavior as manually passed until they are tested with compatible model files and camera hardware.
+Manual no-argument runtime launch, live preview control, camera, real OpenCV Zoo model behavior, and custom ONNX Runtime model checks were not run in this workspace. Do not mark camera preview, face rectangles/keypoints, enrollment, recognition, or GUI button behavior as manually passed until they are tested with compatible model files and camera hardware.
+
+---
+
+### Direct Usable OpenCV Zoo Default
+
+- [x] **Step 1: Add committed OpenCV Zoo default models**
+- [x] **Step 2: Add OpenCV Zoo adapter layer**
+- [x] **Step 3: Wire `opencv_zoo` backend into runtime**
+- [x] **Step 4: Start runtime directly on no-argument launch**
+- [x] **Step 5: Update startup/runtime probes**
+- [x] **Step 6: Run automated verification**
+
+Progress note 2026-06-08: The default build now uses committed OpenCV Zoo YuNet/SFace models under `models/opencv_zoo`, starts the runtime path directly when `ccamera.exe` is launched with no arguments, and preserves `--config` for custom configs. Qt's Windows platform plugin was missing from Qt-recognized runtime locations; runtime deployment now resolves `qwindows.dll` from configured dependency prefixes first, then environment prefixes, with `third_party/msys2/mingw64/share/qt6/plugins/platforms/qwindows.dll` only as fallback, and deploys it to `build/platforms/qwindows.dll`. Automated verification passed with `cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON`, `cmake --build build --config Debug`, and full `ctest --test-dir build -C Debug --output-on-failure` reporting 20/20 tests passed. A bounded no-argument `.\build\ccamera.exe` probe stayed alive until the 15-second timeout, was killed cleanly, and left no matching `ccamera.exe` process. Manual camera preview, real face detection, live enrollment, and real recognition checks were not run and remain unchecked.
 
 ---
 

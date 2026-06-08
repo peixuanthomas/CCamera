@@ -33,12 +33,16 @@ On Windows, `ccamera.exe` is a lightweight launcher. It validates the config and
 
 ## Running
 
-1. Place compatible detector and recognizer ONNX files in `models/`.
-2. Configure dependency paths with CMake.
-3. Build the executable.
-4. Run `ccamera.exe` to open the startup window, or keep using `ccamera.exe --config config/app.example.json` for command-line startup.
+1. Build the executable first.
+2. Double-click `build/ccamera.exe`, or run it from PowerShell:
 
-The startup window lets you load a JSON config, choose detector and recognizer ONNX files, choose the face database path, edit the camera index, and adjust common detection/enrollment settings before pressing Start.
+   ```powershell
+   .\build\ccamera.exe
+   ```
+
+The default configuration uses the committed OpenCV Zoo YuNet and SFace models under `models/opencv_zoo/`. The app opens the live preview directly when launched without arguments.
+
+Use `ccamera.exe --config config/app.example.json` or another JSON file when you need to customize model paths, camera index, thresholds, or database path.
 
 If model files are missing, the launcher reports the missing model path before loading camera or preview dependencies.
 
@@ -63,7 +67,9 @@ ctest --test-dir build -C Debug -R test_offline_virtual_dataset --output-on-fail
 
 This test uses a synthetic OpenCV frame and test-only fake detector/recognizer engines. The fake recognizer derives its embedding from the aligned synthetic crop pixels, so the test checks detector output decoding, keypoint decoding, face alignment, feature extraction normalization, database snapshot matching, and recognition result assembly without opening camera hardware or loading ONNX model files.
 
-## Model Contract
+## Custom ONNX Runtime Model Contract
+
+This contract applies to custom configs that set `inference_backend: "onnxruntime_cpu"`.
 
 The detector input is `image`: a batch-1 NCHW float32 tensor using OpenCV BGR channel order. The detector output is `detections` with shape `[N, 15]`; each row is `[x1, y1, x2, y2, score, left_eye_x, left_eye_y, right_eye_x, right_eye_y, nose_x, nose_y, mouth_left_x, mouth_left_y, mouth_right_x, mouth_right_y]` in frame pixel coordinates.
 

@@ -259,6 +259,101 @@ list(APPEND CCAMERA_RUNTIME_SEARCH_DIRS
 )
 list(REMOVE_DUPLICATES CCAMERA_RUNTIME_SEARCH_DIRS)
 
+set(CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN)
+if (WIN32 AND MINGW)
+    file(TO_CMAKE_PATH "${CCAMERA_LOCAL_MINGW_PREFIX}" _ccamera_local_mingw_prefix_normalized)
+    get_filename_component(
+        _ccamera_local_mingw_prefix_absolute
+        "${_ccamera_local_mingw_prefix_normalized}"
+        ABSOLUTE
+    )
+
+    set(CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN_PREFIXES)
+
+    macro(ccamera_append_qt_platform_plugin_prefix prefix)
+        if (NOT "${prefix}" STREQUAL "")
+            file(TO_CMAKE_PATH "${prefix}" _qt_platform_plugin_prefix_normalized)
+            get_filename_component(
+                _qt_platform_plugin_prefix_absolute
+                "${_qt_platform_plugin_prefix_normalized}"
+                ABSOLUTE
+            )
+            if (NOT _qt_platform_plugin_prefix_absolute IN_LIST CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN_PREFIXES)
+                list(APPEND CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN_PREFIXES "${_qt_platform_plugin_prefix_absolute}")
+            endif()
+        endif()
+    endmacro()
+
+    macro(ccamera_append_nonlocal_qt_platform_plugin_prefix prefix)
+        if (NOT "${prefix}" STREQUAL "")
+            file(TO_CMAKE_PATH "${prefix}" _qt_platform_plugin_prefix_normalized)
+            get_filename_component(
+                _qt_platform_plugin_prefix_absolute
+                "${_qt_platform_plugin_prefix_normalized}"
+                ABSOLUTE
+            )
+            if (NOT _qt_platform_plugin_prefix_absolute STREQUAL _ccamera_local_mingw_prefix_absolute)
+                ccamera_append_qt_platform_plugin_prefix("${_qt_platform_plugin_prefix_absolute}")
+            endif()
+        endif()
+    endmacro()
+
+    if (OpenCV_DIR AND NOT OpenCV_DIR MATCHES "-NOTFOUND$")
+        file(TO_CMAKE_PATH "${OpenCV_DIR}" _opencv_package_dir)
+        if (_opencv_package_dir MATCHES "/(lib|share)/cmake/[^/]+$")
+            string(REGEX REPLACE "/(lib|share)/cmake/[^/]+$" "" _opencv_prefix "${_opencv_package_dir}")
+        elseif (_opencv_package_dir MATCHES "/(lib|share)/[^/]+$")
+            string(REGEX REPLACE "/(lib|share)/[^/]+$" "" _opencv_prefix "${_opencv_package_dir}")
+        elseif (_opencv_package_dir MATCHES "/lib$")
+            string(REGEX REPLACE "/lib$" "" _opencv_prefix "${_opencv_package_dir}")
+        else()
+            set(_opencv_prefix "${_opencv_package_dir}")
+        endif()
+        ccamera_append_nonlocal_qt_platform_plugin_prefix("${_opencv_prefix}")
+    endif()
+
+    foreach (_prefix IN LISTS CMAKE_PREFIX_PATH)
+        ccamera_append_nonlocal_qt_platform_plugin_prefix("${_prefix}")
+    endforeach()
+
+    if (DEFINED ENV{MINGW_PREFIX})
+        ccamera_append_nonlocal_qt_platform_plugin_prefix("$ENV{MINGW_PREFIX}")
+    endif()
+    if (DEFINED ENV{MSYSTEM_PREFIX})
+        ccamera_append_nonlocal_qt_platform_plugin_prefix("$ENV{MSYSTEM_PREFIX}")
+    endif()
+
+    ccamera_append_qt_platform_plugin_prefix("${CCAMERA_LOCAL_MINGW_PREFIX}")
+
+    set(_qt_platform_plugin_relative_paths
+        share/qt6/plugins/platforms/qwindows.dll
+        lib/qt6/plugins/platforms/qwindows.dll
+        plugins/platforms/qwindows.dll
+        qt6/plugins/platforms/qwindows.dll
+    )
+    foreach (_prefix IN LISTS CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN_PREFIXES)
+        foreach (_relative_path IN LISTS _qt_platform_plugin_relative_paths)
+            if (EXISTS "${_prefix}/${_relative_path}")
+                set(CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN "${_prefix}/${_relative_path}")
+                break()
+            endif()
+        endforeach()
+        if (CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN)
+            break()
+        endif()
+    endforeach()
+
+    if (NOT EXISTS "${CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN}")
+        string(REPLACE ";" "\n  " _qt_platform_plugin_prefixes "${CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN_PREFIXES}")
+        string(REPLACE ";" "\n  " _qt_platform_plugin_layouts "${_qt_platform_plugin_relative_paths}")
+        message(FATAL_ERROR
+            "Required Qt Windows platform plugin qwindows.dll was not found. "
+            "Searched dependency prefixes in order:\n  ${_qt_platform_plugin_prefixes}\n"
+            "With relative layouts:\n  ${_qt_platform_plugin_layouts}"
+        )
+    endif()
+endif()
+
 add_library(ccamera_config
     src/app/AppConfig.cpp
     src/app/StartupMode.cpp
@@ -353,8 +448,12 @@ if (WIN32)
 endif()
 
 set(CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES "${CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES}")
+set(CCAMERA_RUNTIME_DEPLOYMENT_CHECK_RELATIVE_PATHS)
 if (WIN32)
     list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES "$<TARGET_FILE_NAME:ccamera_runtime>")
+endif()
+if (WIN32 AND MINGW)
+    list(APPEND CCAMERA_RUNTIME_DEPLOYMENT_CHECK_RELATIVE_PATHS "platforms/qwindows.dll")
 endif()
 
 target_link_libraries(ccamera_runtime PRIVATE
@@ -427,6 +526,17 @@ if (WIN32 AND CCAMERA_REQUIRED_RUNTIME_DLLS)
             $<TARGET_FILE_DIR:ccamera_runtime>
         COMMAND_EXPAND_LISTS
         COMMENT "Deploying runtime DLLs beside ccamera"
+    )
+endif()
+
+if (WIN32 AND MINGW)
+    add_custom_command(TARGET ccamera_runtime POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            $<TARGET_FILE_DIR:ccamera_runtime>/platforms
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CCAMERA_QT_WINDOWS_PLATFORM_PLUGIN}"
+            $<TARGET_FILE_DIR:ccamera_runtime>/platforms
+        COMMENT "Deploying Qt Windows platform plugin beside ccamera"
     )
 endif()
 
@@ -541,6 +651,7 @@ if (CCAMERA_BUILD_TESTS)
             COMMAND ${CMAKE_COMMAND}
                 -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
                 "-DCCAMERA_REQUIRED_DLLS=${CCAMERA_RUNTIME_DEPLOYMENT_CHECK_NAMES}"
+                "-DCCAMERA_REQUIRED_RELATIVE_PATHS=${CCAMERA_RUNTIME_DEPLOYMENT_CHECK_RELATIVE_PATHS}"
                 "-DCCAMERA_UNRESOLVED_DLLS=${CCAMERA_UNRESOLVED_RUNTIME_DLLS}"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckRuntimeDeployment.cmake"
         )

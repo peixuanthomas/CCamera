@@ -1251,7 +1251,7 @@ git commit -m "test: update startup probes for default models"
 - Modify: `docs/superpowers/plans/2026-06-04-cpp-camera-face-recognition.md`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Update README running instructions**
+- [x] **Step 1: Update README running instructions**
 
 In `README.md`, update the `Running` section to say:
 
@@ -1272,7 +1272,7 @@ Use `ccamera.exe --config config/app.example.json` or another JSON file when you
 
 Keep the manual operation text for Enroll, Delete, List, Quit, `Q`, and `Esc`. Keep the custom ONNX Runtime model contract section, but label it as applying to `inference_backend: "onnxruntime_cpu"` custom configs.
 
-- [ ] **Step 2: Update main implementation plan acceptance notes**
+- [x] **Step 2: Update main implementation plan acceptance notes**
 
 In `docs/superpowers/plans/2026-06-04-cpp-camera-face-recognition.md`, add a new section near the existing Simple Interactive GUI Support section:
 
@@ -1291,7 +1291,7 @@ Progress note 2026-06-08: The default build now uses committed OpenCV Zoo YuNet/
 
 Do not check any manual acceptance checklist item unless a manual test was actually run.
 
-- [ ] **Step 3: Run full verification**
+- [x] **Step 3: Run full verification**
 
 Run:
 
@@ -1307,7 +1307,7 @@ Expected:
 100% tests passed
 ```
 
-- [ ] **Step 4: Probe default executable startup without claiming manual pass**
+- [x] **Step 4: Probe default executable startup without claiming manual pass**
 
 Run:
 
@@ -1317,7 +1317,7 @@ Run:
 
 Expected: The executable should no longer fail with missing model errors. If it opens a live preview, record that the process reached preview manually only if a human actually observes it. If the environment lacks a usable camera or the app is stopped before visual confirmation, record the exact controlled error and keep manual checklist items unchecked.
 
-- [ ] **Step 5: Update final discoveries**
+- [x] **Step 5: Update final discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -1327,7 +1327,7 @@ Append to `docs/discoveries.md`:
 
 If the default executable probe produced a controlled camera/model/runtime error, include the exact error in the discovery note instead of saying preview passed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
