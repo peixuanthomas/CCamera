@@ -550,6 +550,8 @@ if (CCAMERA_BUILD_TESTS)
                 -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
                 -DCCAMERA_CONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/config/app.example.json
                 -DCCAMERA_WORKING_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}
+                -DCCAMERA_STARTUP_MODE=missing_model
+                -DCCAMERA_STARTUP_PROBE_DIR=${CMAKE_CURRENT_BINARY_DIR}/manual-startup-probe
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
         )
         add_test(

@@ -7,6 +7,39 @@ if (NOT DEFINED CCAMERA_CONFIG_FILE)
 endif()
 
 set(_config_file "${CCAMERA_CONFIG_FILE}")
+if (CCAMERA_STARTUP_MODE STREQUAL "missing_model")
+    if (NOT DEFINED CCAMERA_STARTUP_PROBE_DIR)
+        message(FATAL_ERROR "CCAMERA_STARTUP_PROBE_DIR is required for missing_model startup mode")
+    endif()
+
+    file(REMOVE_RECURSE "${CCAMERA_STARTUP_PROBE_DIR}")
+    file(MAKE_DIRECTORY "${CCAMERA_STARTUP_PROBE_DIR}")
+    set(_database_path "${CCAMERA_STARTUP_PROBE_DIR}/face_db.json")
+    set(_config_file "${CCAMERA_STARTUP_PROBE_DIR}/app-missing-model.json")
+    file(TO_CMAKE_PATH "${_database_path}" _database_path_json)
+    file(WRITE "${_config_file}" [=[
+{
+  "camera_index": 0,
+  "frame_width": 1280,
+  "frame_height": 720,
+  "detector_model": "models/missing-default-detector.onnx",
+  "recognizer_model": "models/missing-default-recognizer.onnx",
+  "database_path": "@DATABASE_PATH@",
+  "inference_backend": "opencv_zoo",
+  "detection_interval": 3,
+  "detection_threshold": 0.7,
+  "recognition_threshold": 0.45,
+  "enrollment_consistency_threshold": 0.55,
+  "enrollment_sample_count": 15,
+  "enrollment_timeout_seconds": 20,
+  "feature_worker_count": 2
+}
+]=])
+    file(READ "${_config_file}" _config_json)
+    string(REPLACE "@DATABASE_PATH@" "${_database_path_json}" _config_json "${_config_json}")
+    file(WRITE "${_config_file}" "${_config_json}")
+endif()
+
 if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
     if (NOT DEFINED CCAMERA_STARTUP_PROBE_DIR)
         message(FATAL_ERROR "CCAMERA_STARTUP_PROBE_DIR is required for runtime startup mode")
@@ -97,6 +130,17 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
         message(STATUS "Executable reached runtime-load path or controlled application error: ${_error}")
         return()
     endif()
+endif()
+
+if (CCAMERA_STARTUP_MODE STREQUAL "missing_model")
+    if (_error MATCHES "detector model does not exist: models/missing-default-detector.onnx")
+        message(STATUS "Executable reported expected missing default model error: ${_error}")
+        return()
+    endif()
+    message(FATAL_ERROR
+        "Missing-model startup probe did not report the expected missing detector model. "
+        "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+    )
 endif()
 
 if (_error MATCHES "ccamera:")

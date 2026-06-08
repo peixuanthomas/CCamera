@@ -1130,7 +1130,7 @@ git commit -m "feat: start runtime by default"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Add missing-model startup probe mode**
+- [x] **Step 1: Add missing-model startup probe mode**
 
 Modify `cmake/CheckExecutableStartup.cmake` so it supports `CCAMERA_STARTUP_MODE=missing_model`. Add this block after `set(_config_file "${CCAMERA_CONFIG_FILE}")`:
 
@@ -1186,7 +1186,7 @@ endif()
 
 Place the missing-model check before the broad `_error MATCHES "ccamera:"` success branch so a generic `ccamera:` error cannot mask the wrong failure.
 
-- [ ] **Step 2: Keep runtime dummy mode on custom ONNX backend**
+- [x] **Step 2: Keep runtime dummy mode on custom ONNX backend**
 
 In the existing `runtime` mode JSON block, keep:
 
@@ -1196,7 +1196,7 @@ In the existing `runtime` mode JSON block, keep:
 
 This preserves the dummy invalid ONNX model probe for runtime-module load behavior without exercising live camera.
 
-- [ ] **Step 3: Update CTest registration**
+- [x] **Step 3: Update CTest registration**
 
 In `CMakeLists.txt`, update `test_executable_startup` to pass the new missing-model mode:
 
@@ -1213,7 +1213,7 @@ In `CMakeLists.txt`, update `test_executable_startup` to pass the new missing-mo
         )
 ```
 
-- [ ] **Step 4: Run focused startup tests**
+- [x] **Step 4: Run focused startup tests**
 
 Run:
 
@@ -1225,7 +1225,7 @@ ctest --test-dir build -C Debug -R "test_executable_startup|test_executable_star
 
 Expected: all three tests pass. `test_executable_startup` should validate missing default model error using a generated config, while `test_executable_startup_runtime` should still reject runtime module load/export failures.
 
-- [ ] **Step 5: Update discoveries**
+- [x] **Step 5: Update discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -1233,7 +1233,7 @@ Append to `docs/discoveries.md`:
 - 2026-06-08: Windows startup CTest probes were updated for committed default models. `test_executable_startup` now uses a generated missing-model config so it still validates clear missing model errors, and `test_executable_startup_runtime` keeps the dummy invalid ONNX Runtime path to verify runtime-module loading. Focused startup/runtime deployment tests passed. No live camera/model manual checks were run.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
