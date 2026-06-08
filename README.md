@@ -1,6 +1,6 @@
 # CCamera Face Recognition
 
-C++ camera face recognition prototype using OpenCV for camera/display and ONNX Runtime for CPU model inference.
+C++ camera face recognition prototype using OpenCV for camera/display and OpenCV Zoo YuNet/SFace by default, with custom ONNX Runtime CPU configs retained.
 
 First-version features:
 
@@ -13,7 +13,7 @@ First-version features:
 Build dependencies:
 
 - CMake 3.20 or newer.
-- OpenCV with `core`, `imgproc`, `highgui`, and `videoio`.
+- OpenCV with `core`, `imgproc`, `highgui`, `videoio`, and `objdetect`.
 - ONNX Runtime CPU.
 - nlohmann/json.
 

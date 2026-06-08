@@ -173,11 +173,6 @@ if (CCAMERA_STARTUP_MODE STREQUAL "default_runtime")
     )
 endif()
 
-if (_result EQUAL 0)
-    message(STATUS "Executable started and exited successfully")
-    return()
-endif()
-
 if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
     if (_error MATCHES "detector model does not exist" OR _error MATCHES "recognizer model does not exist")
         message(FATAL_ERROR
@@ -200,6 +195,12 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
         message(STATUS "Executable reached runtime-load path or controlled application error: ${_error}")
         return()
     endif()
+    if (_result EQUAL 0)
+        message(FATAL_ERROR
+            "Runtime startup probe exited successfully without reporting runtime-load or downstream app/model handling. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
 endif()
 
 if (CCAMERA_STARTUP_MODE STREQUAL "missing_model")
@@ -211,6 +212,11 @@ if (CCAMERA_STARTUP_MODE STREQUAL "missing_model")
         "Missing-model startup probe did not report the expected missing detector model. "
         "result=${_result}; stdout='${_output}'; stderr='${_error}'"
     )
+endif()
+
+if (_result EQUAL 0)
+    message(STATUS "Executable started and exited successfully")
+    return()
 endif()
 
 if (_error MATCHES "ccamera:")

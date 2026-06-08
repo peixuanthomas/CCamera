@@ -1359,3 +1359,5 @@ Manual acceptance remains deferred unless actually performed:
 - [ ] Unknown faces are labeled `Unknown`.
 - [ ] `delete <name>` removes the identity from the local database.
 - [ ] `quit`, `Q`, and `Esc` stop the application.
+
+Final review note 2026-06-08: Startup probes now reject zero-exit shortcuts for `runtime` and still require the expected generated missing-detector error for `missing_model`. README also documents the default OpenCV Zoo YuNet/SFace backend, retained custom `onnxruntime_cpu` configs, and the OpenCV `objdetect` dependency. Fresh configure, build, focused startup/runtime CTest, full CTest 21/21, and the bounded no-argument build-directory probe passed. Manual checks above remain unchecked.
