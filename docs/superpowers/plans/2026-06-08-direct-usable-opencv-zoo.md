@@ -1322,7 +1322,7 @@ Expected: The executable should no longer fail with missing model errors. If it 
 Append to `docs/discoveries.md`:
 
 ```markdown
-- 2026-06-08: Direct usable OpenCV Zoo default work completed automated verification with `cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON`, `cmake --build build --config Debug`, and `ctest --test-dir build -C Debug --output-on-failure`. The default no-argument launcher path uses committed OpenCV Zoo model files and no longer fails at missing model validation. Manual live camera preview, live enrollment, and real recognition quality checks were not run and remain unchecked.
+- 2026-06-08: Direct usable OpenCV Zoo default work completed automated verification with `cmake -S . -B build -DCCAMERA_BUILD_TESTS=ON`, `cmake --build build --config Debug`, focused startup/runtime CTest, and full `ctest --test-dir build -C Debug --output-on-failure` reporting 21/21 tests passed. The default no-argument launcher resolves committed OpenCV Zoo model files from the executable layout, passes the real default config path into the runtime without generating a temp config, and no longer fails at missing model validation. A bounded no-argument `build\ccamera.exe` probe from the `build` working directory stayed alive until the 15-second timeout, was killed cleanly, left no matching `ccamera.exe` process, and created no new `%TEMP%\ccamera-default-*.json` files. Manual live camera preview, live enrollment, and real recognition quality checks were not run and remain unchecked.
 ```
 
 If the default executable probe produced a controlled camera/model/runtime error, include the exact error in the discovery note instead of saying preview passed.

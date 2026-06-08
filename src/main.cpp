@@ -14,12 +14,12 @@
 #include <dlfcn.h>
 #include <cstdlib>
 #include <sstream>
+#include <unistd.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
 #ifdef __linux__
 #include <array>
-#include <unistd.h>
 #endif
 #endif
 
@@ -30,6 +30,8 @@ namespace {
 #endif
 
 using RunAppFunction = int (*)(int, char**);
+
+std::filesystem::path executable_directory(char** argv);
 
 void require_existing_file(const char* name, const std::string& path) {
     if (!std::filesystem::exists(path)) {
@@ -42,17 +44,92 @@ void validate_runtime_inputs(const ccamera::AppConfig& config) {
     require_existing_file("recognizer model", config.recognizer_model);
 }
 
-ccamera::AppConfig default_startup_config() {
-    const std::string example_path = "config/app.example.json";
-    if (std::filesystem::exists(example_path)) {
-        try {
-            return ccamera::load_app_config(example_path);
-        } catch (const std::exception&) {
+struct DefaultStartupConfig {
+    ccamera::AppConfig config;
+    std::filesystem::path resource_root;
+    std::filesystem::path config_path;
+};
+
+std::string path_string(const std::filesystem::path& path) {
+    return path.lexically_normal().string();
+}
+
+void append_unique_directory(std::vector<std::filesystem::path>& directories, std::filesystem::path directory) {
+    if (directory.empty()) {
+        return;
+    }
+
+    directory = std::filesystem::absolute(directory).lexically_normal();
+    for (const auto& existing : directories) {
+        if (existing == directory) {
+            return;
         }
     }
-    ccamera::AppConfig config;
-    ccamera::validate_app_config(config);
-    return config;
+    directories.push_back(std::move(directory));
+}
+
+std::vector<std::filesystem::path> default_resource_directories(char** argv) {
+    std::vector<std::filesystem::path> directories;
+    append_unique_directory(directories, std::filesystem::current_path());
+
+    const std::filesystem::path executable_dir = executable_directory(argv);
+    append_unique_directory(directories, executable_dir.parent_path());
+    append_unique_directory(directories, executable_dir);
+    return directories;
+}
+
+void absolutize_default_paths(ccamera::AppConfig& config, const std::filesystem::path& base_directory) {
+    auto absolutize = [&](std::string& value) {
+        const std::filesystem::path path(value);
+        if (path.is_relative()) {
+            value = path_string(base_directory / path);
+        }
+    };
+
+    absolutize(config.detector_model);
+    absolutize(config.recognizer_model);
+    absolutize(config.database_path);
+}
+
+DefaultStartupConfig default_startup_config(char** argv) {
+    const auto directories = default_resource_directories(argv);
+    std::vector<std::string> diagnostics;
+    for (const auto& directory : directories) {
+        const std::filesystem::path example_path = directory / "config" / "app.example.json";
+        if (std::filesystem::exists(example_path)) {
+            try {
+                ccamera::AppConfig config = ccamera::load_app_config(path_string(example_path));
+                absolutize_default_paths(config, directory);
+                if (std::filesystem::exists(config.detector_model) && std::filesystem::exists(config.recognizer_model)) {
+                    return {std::move(config), directory, std::filesystem::absolute(example_path).lexically_normal()};
+                }
+                diagnostics.push_back(
+                    "default config " + path_string(example_path) +
+                    " does not point at existing committed OpenCV Zoo models");
+            } catch (const std::exception& error) {
+                diagnostics.push_back(
+                    "failed to load default config " + path_string(example_path) + ": " + error.what());
+            }
+        }
+    }
+
+    std::string message =
+        "failed to find default resource root with config/app.example.json and committed OpenCV Zoo models";
+    if (!diagnostics.empty()) {
+        message += "; candidates checked:";
+        for (const auto& diagnostic : diagnostics) {
+            message += " " + diagnostic + ";";
+        }
+        message.pop_back();
+    }
+    throw std::runtime_error(message);
+}
+
+std::string argv0_or_default(char** argv) {
+    if (argv != nullptr && argv[0] != nullptr) {
+        return argv[0];
+    }
+    return "ccamera.exe";
 }
 
 std::vector<char*> mutable_argv(std::vector<std::string>& args) {
@@ -190,10 +267,10 @@ int main(int argc, char** argv) {
         ccamera::AppConfig config;
         const ccamera::StartupMode startup_mode = ccamera::classify_startup_mode(argc, argv);
         if (startup_mode == ccamera::StartupMode::DefaultRuntime) {
-            config = default_startup_config();
-            generated_args = {
-                argv != nullptr && argv[0] != nullptr ? argv[0] : "ccamera.exe",
-            };
+            DefaultStartupConfig startup_config = default_startup_config(argv);
+            std::filesystem::current_path(startup_config.resource_root);
+            config = std::move(startup_config.config);
+            generated_args = {argv0_or_default(argv), "--config", path_string(startup_config.config_path)};
             generated_argv = mutable_argv(generated_args);
             argc = static_cast<int>(generated_argv.size());
             argv = generated_argv.data();

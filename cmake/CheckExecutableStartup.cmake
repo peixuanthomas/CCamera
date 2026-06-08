@@ -81,8 +81,13 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
     file(WRITE "${_config_file}" "${_config_json}")
 endif()
 
+set(_startup_args --config "${_config_file}")
+if (CCAMERA_STARTUP_MODE STREQUAL "default_runtime")
+    set(_startup_args)
+endif()
+
 execute_process(
-    COMMAND "${CCAMERA_TARGET_FILE}" --config "${_config_file}"
+    COMMAND "${CCAMERA_TARGET_FILE}" ${_startup_args}
     WORKING_DIRECTORY "${CCAMERA_WORKING_DIRECTORY}"
     RESULT_VARIABLE _result
     OUTPUT_VARIABLE _output
@@ -99,6 +104,71 @@ if (_result STREQUAL "-1073741515"
         OR _result MATCHES "no such file")
     message(FATAL_ERROR
         "Executable died in the Windows loader before application startup. "
+        "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+    )
+endif()
+
+if (CCAMERA_STARTUP_MODE STREQUAL "default_runtime")
+    if (_error MATCHES "detector model does not exist" OR _error MATCHES "recognizer model does not exist")
+        message(FATAL_ERROR
+            "Default no-argument startup did not resolve committed model paths from the executable location. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+    if (_error MATCHES "ccamera: failed to load runtime module"
+            OR _error MATCHES "ccamera: failed to find ccamera_run_app")
+        message(FATAL_ERROR
+            "Default no-argument startup failed before downstream app/model handling. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+
+    string(TOLOWER "${_error}" _error_lower)
+    set(_model_backend_error FALSE)
+    if (_error_lower MATCHES "(detector|recognizer|yunet|sface).*(model|create|init|initialize|load|backend|opencv|dnn|onnx|protobuf|parse|parsing|failed)"
+            OR _error_lower MATCHES "(model|create|init|initialize|load|backend|opencv|dnn|onnx|protobuf|parse|parsing|failed).*(detector|recognizer|yunet|sface)"
+            OR _error_lower MATCHES "(dnn|onnx|protobuf).*(model|backend|create|init|initialize|load|read|parse|parsing|failed|error)"
+            OR _error_lower MATCHES "(model|backend|create|init|initialize|load|read|parse|parsing|failed|error).*(dnn|onnx|protobuf)"
+            OR _error_lower MATCHES "failed to (create|init|initialize|load).*(backend|model)"
+            OR _error_lower MATCHES "(backend|model).*(failed to (create|init|initialize|load))")
+        set(_model_backend_error TRUE)
+    endif()
+    if (_model_backend_error)
+        message(FATAL_ERROR
+            "Default no-argument startup failed during likely model/backend initialization. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+
+    set(_camera_unavailable_error FALSE)
+    if (_error_lower MATCHES "ccamera:.*(camera unavailable|camera is unavailable|no camera|failed to open camera|cannot open camera|can't open camera|unable to open camera|failed to read frame from camera)")
+        set(_camera_unavailable_error TRUE)
+    endif()
+    if (_camera_unavailable_error)
+        message(STATUS "Default no-argument startup reached downstream camera-unavailable handling: ${_error}")
+        return()
+    endif()
+    if (_error MATCHES "ccamera:")
+        message(FATAL_ERROR
+            "Default no-argument startup exited with an unrecognized application error. "
+            "Only timeout or known downstream camera-unavailable errors are accepted. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+    if (_result MATCHES "timeout" OR _result MATCHES "Timeout")
+        message(STATUS "Default no-argument startup stayed alive until the bounded probe timed out")
+        return()
+    endif()
+    if (_result STREQUAL "0")
+        message(FATAL_ERROR
+            "Default no-argument startup exited successfully instead of staying in runtime preview. "
+            "result=${_result}; stdout='${_output}'; stderr='${_error}'"
+        )
+    endif()
+
+    message(FATAL_ERROR
+        "Default no-argument startup ended without an accepted runtime condition. "
+        "Only timeout or known downstream camera-unavailable errors are accepted. "
         "result=${_result}; stdout='${_output}'; stderr='${_error}'"
     )
 endif()

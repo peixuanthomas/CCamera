@@ -666,6 +666,15 @@ if (CCAMERA_BUILD_TESTS)
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
         )
         add_test(
+            NAME test_executable_startup_default_runtime
+            COMMAND ${CMAKE_COMMAND}
+                -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
+                -DCCAMERA_CONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/config/app.example.json
+                -DCCAMERA_WORKING_DIRECTORY=$<TARGET_FILE_DIR:ccamera>
+                -DCCAMERA_STARTUP_MODE=default_runtime
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
+        )
+        add_test(
             NAME test_executable_startup_runtime
             COMMAND ${CMAKE_COMMAND}
                 -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
