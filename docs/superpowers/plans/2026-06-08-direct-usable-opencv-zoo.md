@@ -953,7 +953,7 @@ git commit -m "feat: wire OpenCV Zoo backend"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Add failing startup-mode test**
+- [x] **Step 1: Add failing startup-mode test**
 
 Create `tests/test_startup_mode.cpp`:
 
@@ -979,7 +979,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 2: Register failing startup-mode test**
+- [x] **Step 2: Register failing startup-mode test**
 
 Add `src/app/StartupMode.cpp` to `ccamera_config`:
 
@@ -998,7 +998,7 @@ Add the test inside `if (CCAMERA_BUILD_TESTS)`:
     add_test(NAME test_startup_mode COMMAND test_startup_mode)
 ```
 
-- [ ] **Step 3: Run startup-mode test and verify it fails**
+- [x] **Step 3: Run startup-mode test and verify it fails**
 
 Run:
 
@@ -1009,7 +1009,7 @@ cmake --build build --config Debug --target test_startup_mode
 
 Expected: build fails because `app/StartupMode.hpp` does not exist.
 
-- [ ] **Step 4: Add startup-mode helper**
+- [x] **Step 4: Add startup-mode helper**
 
 Create `src/app/StartupMode.hpp`:
 
@@ -1045,7 +1045,7 @@ StartupMode classify_startup_mode(int argc, char**) {
 }  // namespace ccamera
 ```
 
-- [ ] **Step 5: Change launcher no-argument flow**
+- [x] **Step 5: Change launcher no-argument flow**
 
 In `src/main.cpp`, add:
 
@@ -1082,7 +1082,7 @@ Remove the `temporary_startup_config_path()` function and the `TemporaryConfigCl
         TemporaryConfigCleanup temporary_config;
 ```
 
-- [ ] **Step 6: Verify startup-mode test passes**
+- [x] **Step 6: Verify startup-mode test passes**
 
 Run:
 
@@ -1093,7 +1093,7 @@ ctest --test-dir build -C Debug -R test_startup_mode --output-on-failure
 
 Expected: `test_startup_mode` passes.
 
-- [ ] **Step 7: Verify launcher still handles config arguments**
+- [x] **Step 7: Verify launcher still handles config arguments**
 
 Run:
 
@@ -1104,7 +1104,7 @@ cmake --build build --config Debug --target ccamera
 
 Expected: The process no longer fails with a missing default model error. If it reaches camera startup and cannot open the camera, the error is a controlled `ccamera:` application error. Do not mark camera preview as manually passed.
 
-- [ ] **Step 8: Update discoveries**
+- [x] **Step 8: Update discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -1112,7 +1112,7 @@ Append to `docs/discoveries.md`:
 - 2026-06-08: No-argument startup now classifies as default runtime startup instead of startup-window configuration. `--config` and positional config startup remain runtime paths. Automated `test_startup_mode` passed, and launcher startup reached controlled application/runtime handling with committed default models. No live camera/model manual checks were run.
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Run:
 

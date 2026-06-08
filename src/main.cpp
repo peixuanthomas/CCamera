@@ -1,5 +1,5 @@
 #include "app/AppConfig.hpp"
-#include "ui/StartupWindow.hpp"
+#include "app/StartupMode.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -55,11 +55,6 @@ ccamera::AppConfig default_startup_config() {
     return config;
 }
 
-std::filesystem::path temporary_startup_config_path() {
-    const auto ticks = ccamera::Clock::now().time_since_epoch().count();
-    return std::filesystem::temp_directory_path() / ("ccamera-startup-" + std::to_string(ticks) + ".json");
-}
-
 std::vector<char*> mutable_argv(std::vector<std::string>& args) {
     std::vector<char*> result;
     result.reserve(args.size());
@@ -68,23 +63,6 @@ std::vector<char*> mutable_argv(std::vector<std::string>& args) {
     }
     return result;
 }
-
-class TemporaryConfigCleanup {
-public:
-    void set(std::filesystem::path path) {
-        path_ = std::move(path);
-    }
-
-    ~TemporaryConfigCleanup() {
-        if (!path_.empty()) {
-            std::error_code ignored;
-            std::filesystem::remove(path_, ignored);
-        }
-    }
-
-private:
-    std::filesystem::path path_;
-};
 
 #ifdef _WIN32
 std::string windows_error_message(DWORD error_code) {
@@ -208,22 +186,13 @@ int main(int argc, char** argv) {
     try {
         std::vector<std::string> generated_args;
         std::vector<char*> generated_argv;
-        TemporaryConfigCleanup temporary_config;
 
         ccamera::AppConfig config;
-        if (argc <= 1) {
-            const auto selected_config = ccamera::show_startup_window(default_startup_config());
-            if (!selected_config.has_value()) {
-                return 0;
-            }
-            config = *selected_config;
-            const std::filesystem::path generated_config_path = temporary_startup_config_path();
-            ccamera::save_app_config(generated_config_path.string(), config);
-            temporary_config.set(generated_config_path);
+        const ccamera::StartupMode startup_mode = ccamera::classify_startup_mode(argc, argv);
+        if (startup_mode == ccamera::StartupMode::DefaultRuntime) {
+            config = default_startup_config();
             generated_args = {
                 argv != nullptr && argv[0] != nullptr ? argv[0] : "ccamera.exe",
-                "--config",
-                generated_config_path.string(),
             };
             generated_argv = mutable_argv(generated_args);
             argc = static_cast<int>(generated_argv.size());

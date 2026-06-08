@@ -261,6 +261,7 @@ list(REMOVE_DUPLICATES CCAMERA_RUNTIME_SEARCH_DIRS)
 
 add_library(ccamera_config
     src/app/AppConfig.cpp
+    src/app/StartupMode.cpp
 )
 
 target_include_directories(ccamera_config PUBLIC
@@ -332,18 +333,11 @@ target_link_libraries(ccamera_core PUBLIC
 
 add_executable(ccamera
     src/main.cpp
-    src/ui/StartupWindow.cpp
 )
 
 target_link_libraries(ccamera PRIVATE
     ccamera_config
 )
-
-if (WIN32)
-    target_link_libraries(ccamera PRIVATE
-        comdlg32
-    )
-endif()
 
 target_compile_definitions(ccamera PRIVATE
     "CCAMERA_RUNTIME_MODULE_NAME=\"$<TARGET_FILE_NAME:ccamera_runtime>\""
@@ -438,6 +432,10 @@ endif()
 
 if (CCAMERA_BUILD_TESTS)
     enable_testing()
+
+    add_executable(test_startup_mode tests/test_startup_mode.cpp)
+    target_link_libraries(test_startup_mode PRIVATE ccamera_config)
+    add_test(NAME test_startup_mode COMMAND test_startup_mode)
 
     add_executable(test_recognizer tests/test_recognizer.cpp)
     target_link_libraries(test_recognizer PRIVATE ccamera_core)
