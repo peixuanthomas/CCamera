@@ -726,7 +726,7 @@ git commit -m "feat: add OpenCV Zoo face adapters"
 - Modify: `tests/test_app_run_cleanup.cpp`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Add failing backend construction coverage**
+- [x] **Step 1: Add failing backend construction coverage**
 
 Open `tests/test_app_run_cleanup.cpp` and add these includes:
 
@@ -758,7 +758,7 @@ Add this block before the final `return 0;`:
     assert(saw_missing_model_error);
 ```
 
-- [ ] **Step 2: Run focused test and verify it fails or exposes current hard-coded backend**
+- [x] **Step 2: Run focused test and verify it fails or exposes current hard-coded backend**
 
 Run:
 
@@ -769,7 +769,7 @@ ctest --test-dir build -C Debug -R test_app_run_cleanup --output-on-failure
 
 Expected: failure before implementation because `AppController` still constructs `OnnxRuntimeCpuEngine` unconditionally.
 
-- [ ] **Step 3: Change AppController member ownership**
+- [x] **Step 3: Change AppController member ownership**
 
 Update includes in `src/app/AppController.hpp`:
 
@@ -800,7 +800,7 @@ with:
     std::unique_ptr<FaceEmbeddingService> extractor_;
 ```
 
-- [ ] **Step 4: Add backend factory logic**
+- [x] **Step 4: Add backend factory logic**
 
 Update includes in `src/app/AppController.cpp`:
 
@@ -864,7 +864,7 @@ AppController::AppController(AppConfig config)
 }
 ```
 
-- [ ] **Step 5: Update call sites**
+- [x] **Step 5: Update call sites**
 
 In `handle_enrollment()`, replace:
 
@@ -902,7 +902,7 @@ with:
     return recognize_frame_faces(frame, faces, aligner_, *extractor_, db_snapshot, recognizer_);
 ```
 
-- [ ] **Step 6: Verify backend construction coverage passes**
+- [x] **Step 6: Verify backend construction coverage passes**
 
 Run:
 
@@ -913,7 +913,7 @@ ctest --test-dir build -C Debug -R test_app_run_cleanup --output-on-failure
 
 Expected: `test_app_run_cleanup` passes.
 
-- [ ] **Step 7: Run app-level focused tests**
+- [x] **Step 7: Run app-level focused tests**
 
 Run:
 
@@ -924,7 +924,7 @@ ctest --test-dir build -C Debug -R "test_offline_virtual_dataset|test_enrollment
 
 Expected: all focused tests pass.
 
-- [ ] **Step 8: Update discoveries**
+- [x] **Step 8: Update discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -932,7 +932,7 @@ Append to `docs/discoveries.md`:
 - 2026-06-08: `AppController` now selects face backend by `AppConfig::inference_backend`. The default `opencv_zoo` backend constructs OpenCV Zoo YuNet/SFace adapters, while `onnxruntime_cpu` keeps the existing `OnnxRuntimeCpuEngine` path for custom configs. Focused backend construction and app recognition tests passed. No live camera/model manual checks were run.
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Run:
 

@@ -9,6 +9,7 @@
 #include "face/FaceDatabase.hpp"
 #include "face/FaceDetector.hpp"
 #include "face/FaceFeatureExtractor.hpp"
+#include "face/FaceServices.hpp"
 #include "face/Recognizer.hpp"
 #include "inference/OnnxRuntimeCpuEngine.hpp"
 
@@ -36,11 +37,11 @@ private:
 
     AppConfig config_;
     FrameBuffer frame_buffer_;
-    OnnxRuntimeCpuEngine detector_engine_;
-    OnnxRuntimeCpuEngine recognizer_engine_;
-    FaceDetector detector_;
+    std::unique_ptr<OnnxRuntimeCpuEngine> detector_engine_;
+    std::unique_ptr<OnnxRuntimeCpuEngine> recognizer_engine_;
+    std::unique_ptr<FaceDetectionService> detector_;
     FaceAligner aligner_;
-    FaceFeatureExtractor extractor_;
+    std::unique_ptr<FaceEmbeddingService> extractor_;
     FaceDatabase database_;
     Recognizer recognizer_;
     CommandLoop command_loop_;

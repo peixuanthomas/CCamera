@@ -3,6 +3,8 @@
 #include "app/AppRunCleanup.hpp"
 #include "app/FrameRecognition.hpp"
 #include "camera/CameraCapture.hpp"
+#include "face/OpenCvZooFaceDetector.hpp"
+#include "face/OpenCvZooFaceFeatureExtractor.hpp"
 #include "ui/PreviewWindow.hpp"
 
 #include <opencv2/highgui.hpp>
@@ -10,21 +12,55 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
 namespace ccamera {
+namespace {
+
+struct FaceBackendBundle {
+    std::unique_ptr<OnnxRuntimeCpuEngine> detector_engine;
+    std::unique_ptr<OnnxRuntimeCpuEngine> recognizer_engine;
+    std::unique_ptr<FaceDetectionService> detector;
+    std::unique_ptr<FaceEmbeddingService> extractor;
+};
+
+FaceBackendBundle make_face_backend(const AppConfig& config) {
+    FaceBackendBundle bundle;
+    if (config.inference_backend == "opencv_zoo") {
+        bundle.detector = std::make_unique<OpenCvZooFaceDetector>(
+            config.detector_model,
+            config.detection_threshold);
+        bundle.extractor = std::make_unique<OpenCvZooFaceFeatureExtractor>(
+            config.recognizer_model);
+        return bundle;
+    }
+
+    if (config.inference_backend == "onnxruntime_cpu") {
+        bundle.detector_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.detector_model);
+        bundle.recognizer_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.recognizer_model);
+        bundle.detector = std::make_unique<FaceDetector>(*bundle.detector_engine, config.detection_threshold);
+        bundle.extractor = std::make_unique<FaceFeatureExtractor>(*bundle.recognizer_engine);
+        return bundle;
+    }
+
+    throw std::invalid_argument("unknown inference_backend: " + config.inference_backend);
+}
+
+}  // namespace
 
 AppController::AppController(AppConfig config)
     : config_(std::move(config)),
-      detector_engine_(config_.detector_model),
-      recognizer_engine_(config_.recognizer_model),
-      detector_(detector_engine_, config_.detection_threshold),
       aligner_(),
-      extractor_(recognizer_engine_),
       database_(config_.database_path),
       recognizer_(config_.recognition_threshold),
       enrollment_session_(config_) {
+    FaceBackendBundle backend = make_face_backend(config_);
+    detector_engine_ = std::move(backend.detector_engine);
+    recognizer_engine_ = std::move(backend.recognizer_engine);
+    detector_ = std::move(backend.detector);
+    extractor_ = std::move(backend.extractor);
     database_.load_or_create();
 }
 
@@ -93,7 +129,7 @@ void AppController::handle_enrollment(
 
     try {
         const cv::Mat aligned = aligner_.align(image, faces.front());
-        const FaceEmbedding sample = extractor_.extract(aligned);
+        const FaceEmbedding sample = extractor_->extract(aligned);
         const EnrollmentUpdate update = enrollment_session_.add_sample(sample, now);
         if (update.status == EnrollmentStatus::Completed && update.embedding.has_value()) {
             database_.upsert_person(update.name, *update.embedding);
@@ -111,12 +147,12 @@ void AppController::handle_enrollment(
 }
 
 std::vector<RecognitionResult> AppController::process_frame(const Frame& frame) {
-    const auto faces = detector_.detect(frame.image);
+    const auto faces = detector_->detect(frame.image);
 
     handle_enrollment(frame.image, faces, Clock::now());
 
     const auto db_snapshot = database_.snapshot();
-    return recognize_frame_faces(frame, faces, aligner_, extractor_, db_snapshot, recognizer_);
+    return recognize_frame_faces(frame, faces, aligner_, *extractor_, db_snapshot, recognizer_);
 }
 
 void AppController::recognition_loop() {
