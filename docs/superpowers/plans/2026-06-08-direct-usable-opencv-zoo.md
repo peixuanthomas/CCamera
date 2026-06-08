@@ -676,7 +676,7 @@ target_link_libraries(ccamera_core PUBLIC
 )
 ```
 
-- [ ] **Step 8: Verify adapter test passes**
+- [x] **Step 8: Verify adapter test passes**
 
 Run:
 

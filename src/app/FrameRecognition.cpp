@@ -9,7 +9,7 @@ std::vector<RecognitionResult> recognize_frame_faces(
     const Frame& frame,
     const std::vector<FaceDetection>& faces,
     const FaceAligner& aligner,
-    FaceFeatureExtractor& extractor,
+    FaceEmbeddingService& extractor,
     const FaceDatabaseSnapshot& database,
     const Recognizer& recognizer) {
     std::vector<RecognitionResult> results;

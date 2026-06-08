@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/Types.hpp"
+#include "face/FaceServices.hpp"
 #include "inference/InferenceEngine.hpp"
 
 #include <opencv2/core.hpp>
@@ -8,10 +8,10 @@
 
 namespace ccamera {
 
-class FaceDetector {
+class FaceDetector final : public FaceDetectionService {
 public:
     FaceDetector(InferenceEngine& engine, float threshold);
-    std::vector<FaceDetection> detect(const cv::Mat& frame);
+    std::vector<FaceDetection> detect(const cv::Mat& frame) override;
 
 private:
     InferenceEngine& engine_;

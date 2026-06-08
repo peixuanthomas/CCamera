@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/Types.hpp"
+#include "face/FaceServices.hpp"
 #include "inference/InferenceEngine.hpp"
 
 #include <opencv2/core.hpp>
@@ -9,10 +9,10 @@
 
 namespace ccamera {
 
-class FaceFeatureExtractor {
+class FaceFeatureExtractor final : public FaceEmbeddingService {
 public:
     explicit FaceFeatureExtractor(InferenceEngine& engine);
-    FaceEmbedding extract(const cv::Mat& aligned_face);
+    FaceEmbedding extract(const cv::Mat& aligned_face) override;
 
 private:
     InferenceEngine& engine_;

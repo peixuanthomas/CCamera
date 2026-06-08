@@ -24,7 +24,7 @@ if (EXISTS "${CCAMERA_LOCAL_ONNXRUNTIME_ROOT}")
     list(APPEND CMAKE_PREFIX_PATH "${CCAMERA_LOCAL_ONNXRUNTIME_ROOT}")
 endif()
 
-find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio objdetect)
 find_package(ONNXRuntime REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -220,6 +220,7 @@ if (WIN32)
             opencv_core
             opencv_highgui
             opencv_imgproc
+            opencv_objdetect
             opencv_videoio)
         ccamera_append_imported_runtime_dll_name(
             CCAMERA_RUNTIME_DEPLOYMENT_DLL_NAMES
@@ -289,6 +290,8 @@ target_sources(ccamera_core PRIVATE
     src/face/FaceDatabase.cpp
     src/face/FaceDetector.cpp
     src/face/FaceFeatureExtractor.cpp
+    src/face/OpenCvZooFaceDetector.cpp
+    src/face/OpenCvZooFaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
     src/inference/OnnxRuntimeCpuEngine.cpp
     src/ui/RuntimeControls.cpp
@@ -309,6 +312,10 @@ target_link_libraries(ccamera_core PUBLIC
 
 target_link_libraries(ccamera_core PUBLIC
     opencv_imgproc
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    opencv_objdetect
 )
 
 target_link_libraries(ccamera_core PUBLIC
@@ -374,6 +381,7 @@ if (WIN32)
             opencv_core
             opencv_highgui
             opencv_imgproc
+            opencv_objdetect
             opencv_videoio)
         ccamera_append_imported_runtime_dll(
             CCAMERA_REQUIRED_RUNTIME_DLLS
@@ -464,6 +472,15 @@ if (CCAMERA_BUILD_TESTS)
         COMMAND ${CMAKE_COMMAND} -E env
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_face_feature_extraction>
+    )
+
+    add_executable(test_opencv_zoo_adapters tests/test_opencv_zoo_adapters.cpp)
+    target_link_libraries(test_opencv_zoo_adapters PRIVATE ccamera_core)
+    add_test(
+        NAME test_opencv_zoo_adapters
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_opencv_zoo_adapters>
     )
 
     add_executable(test_command_loop tests/test_command_loop.cpp)
