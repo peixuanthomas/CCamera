@@ -287,7 +287,7 @@ git commit -m "feat: add OpenCV Zoo default models"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/discoveries.md`
 
-- [ ] **Step 1: Add failing adapter tests**
+- [x] **Step 1: Add failing adapter tests**
 
 Create `tests/test_opencv_zoo_adapters.cpp`:
 
@@ -372,7 +372,7 @@ int main() {
 }
 ```
 
-- [ ] **Step 2: Register the failing test**
+- [x] **Step 2: Register the failing test**
 
 Add to `CMakeLists.txt` inside `if (CCAMERA_BUILD_TESTS)`:
 
@@ -387,7 +387,7 @@ Add to `CMakeLists.txt` inside `if (CCAMERA_BUILD_TESTS)`:
     )
 ```
 
-- [ ] **Step 3: Run the test and verify it fails**
+- [x] **Step 3: Run the test and verify it fails**
 
 Run:
 
@@ -398,7 +398,7 @@ cmake --build build --config Debug --target test_opencv_zoo_adapters
 
 Expected: build fails because `face/OpenCvZooFaceDetector.hpp` does not exist.
 
-- [ ] **Step 4: Add backend-neutral interfaces**
+- [x] **Step 4: Add backend-neutral interfaces**
 
 Create `src/face/FaceServices.hpp`:
 
@@ -471,7 +471,7 @@ std::vector<RecognitionResult> recognize_frame_faces(
 
 Make the same signature change in `src/app/FrameRecognition.cpp`.
 
-- [ ] **Step 5: Add OpenCV Zoo adapter headers**
+- [x] **Step 5: Add OpenCV Zoo adapter headers**
 
 Create `src/face/OpenCvZooFaceDetector.hpp`:
 
@@ -531,7 +531,7 @@ private:
 }  // namespace ccamera
 ```
 
-- [ ] **Step 6: Add OpenCV Zoo adapter implementation**
+- [x] **Step 6: Add OpenCV Zoo adapter implementation**
 
 Create `src/face/OpenCvZooFaceDetector.cpp`:
 
@@ -647,7 +647,7 @@ FaceEmbedding OpenCvZooFaceFeatureExtractor::extract(const cv::Mat& aligned_face
 }  // namespace ccamera
 ```
 
-- [ ] **Step 7: Link OpenCV objdetect and register sources**
+- [x] **Step 7: Link OpenCV objdetect and register sources**
 
 Update `find_package` in `CMakeLists.txt`:
 
@@ -688,7 +688,7 @@ ctest --test-dir build -C Debug -R test_opencv_zoo_adapters --output-on-failure
 
 Expected: `test_opencv_zoo_adapters` passes.
 
-- [ ] **Step 9: Run existing focused tests affected by interface change**
+- [x] **Step 9: Run existing focused tests affected by interface change**
 
 Run:
 
@@ -699,7 +699,7 @@ ctest --test-dir build -C Debug -R "test_offline_virtual_dataset|test_face_featu
 
 Expected: all focused tests pass.
 
-- [ ] **Step 10: Update discoveries**
+- [x] **Step 10: Update discoveries**
 
 Append to `docs/discoveries.md`:
 
@@ -707,7 +707,7 @@ Append to `docs/discoveries.md`:
 - 2026-06-08: Added backend-neutral face detection/embedding service interfaces and OpenCV Zoo adapter helpers. YuNet output rows are converted from OpenCV `FaceDetectorYN` order `[x, y, w, h, right_eye, left_eye, nose, right_mouth, left_mouth, score]` into project `FaceDetection` fields, and SFace features are converted into L2-normalized `FaceEmbedding` values. Focused adapter and affected recognition/visualization tests passed. No live camera/model manual checks were run.
 ```
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 Run:
 
