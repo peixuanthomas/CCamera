@@ -394,6 +394,7 @@ target_sources(ccamera_core PRIVATE
     src/ui/RuntimeControls.cpp
     src/ui/PreviewOverlay.cpp
     src/web/WebCommandQueue.cpp
+    src/web/WebStatus.cpp
 )
 
 target_include_directories(ccamera_core PUBLIC
@@ -600,6 +601,10 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_web_command_queue tests/test_web_command_queue.cpp)
     target_link_libraries(test_web_command_queue PRIVATE ccamera_core)
     add_test(NAME test_web_command_queue COMMAND test_web_command_queue)
+
+    add_executable(test_web_status tests/test_web_status.cpp)
+    target_link_libraries(test_web_status PRIVATE ccamera_core)
+    add_test(NAME test_web_status COMMAND test_web_status)
 
     add_executable(test_app_config tests/test_app_config.cpp)
     target_link_libraries(test_app_config PRIVATE ccamera_core)

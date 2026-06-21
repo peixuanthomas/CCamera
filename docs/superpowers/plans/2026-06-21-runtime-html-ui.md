@@ -286,7 +286,7 @@ Check off Task 1 steps in this plan. Append one dated line to `docs/discoveries.
 - 2026-06-21: Runtime HTML UI Task 1 added `WebCommandQueue`, validating browser JSON commands for enroll/delete/list/quit and queuing only valid `Command` values. Focused `test_web_command_queue` passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
@@ -305,7 +305,7 @@ git commit -m "feat: add web command queue"
 - Modify after verification: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_web_status.cpp`:
 
@@ -375,7 +375,7 @@ Add CMake test target:
     add_test(NAME test_web_status COMMAND test_web_status)
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 
@@ -385,7 +385,7 @@ cmake --build build --config Debug --target test_web_status
 
 Expected: build fails because `web/WebStatus.hpp` does not exist.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `src/web/WebStatus.hpp`:
 
@@ -460,7 +460,7 @@ Add the source to `ccamera_core`:
     src/web/WebStatus.cpp
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 
@@ -471,7 +471,7 @@ ctest --test-dir build -C Debug -R test_web_status --output-on-failure
 
 Expected: build succeeds and CTest reports `100% tests passed`.
 
-- [ ] **Step 5: Update plan and discoveries**
+- [x] **Step 5: Update plan and discoveries**
 
 Check off Task 2 steps in this plan. Append:
 
@@ -479,7 +479,7 @@ Check off Task 2 steps in this plan. Append:
 - 2026-06-21: Runtime HTML UI Task 2 added `WebStatusSnapshot` JSON serialization for browser status without exposing person ids or raw embeddings. Focused `test_web_status` passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
