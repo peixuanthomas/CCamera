@@ -386,12 +386,14 @@ target_sources(ccamera_core PRIVATE
     src/face/FaceDatabase.cpp
     src/face/FaceDetector.cpp
     src/face/FaceFeatureExtractor.cpp
+    src/face/FaceServices.cpp
     src/face/OpenCvZooFaceDetector.cpp
     src/face/OpenCvZooFaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
     src/inference/OnnxRuntimeCpuEngine.cpp
     src/ui/RuntimeControls.cpp
     src/ui/PreviewOverlay.cpp
+    src/web/WebCommandQueue.cpp
 )
 
 target_include_directories(ccamera_core PUBLIC
@@ -594,6 +596,10 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_command_loop tests/test_command_loop.cpp)
     target_link_libraries(test_command_loop PRIVATE ccamera_core)
     add_test(NAME test_command_loop COMMAND test_command_loop)
+
+    add_executable(test_web_command_queue tests/test_web_command_queue.cpp)
+    target_link_libraries(test_web_command_queue PRIVATE ccamera_core)
+    add_test(NAME test_web_command_queue COMMAND test_web_command_queue)
 
     add_executable(test_app_config tests/test_app_config.cpp)
     target_link_libraries(test_app_config PRIVATE ccamera_core)
