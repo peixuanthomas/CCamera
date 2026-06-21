@@ -24,7 +24,7 @@ if (EXISTS "${CCAMERA_LOCAL_ONNXRUNTIME_ROOT}")
     list(APPEND CMAKE_PREFIX_PATH "${CCAMERA_LOCAL_ONNXRUNTIME_ROOT}")
 endif()
 
-find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio objdetect)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs highgui videoio objdetect)
 find_package(ONNXRuntime REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -219,6 +219,7 @@ if (WIN32)
     foreach (_opencv_runtime_target IN ITEMS
             opencv_core
             opencv_highgui
+            opencv_imgcodecs
             opencv_imgproc
             opencv_objdetect
             opencv_videoio)
@@ -397,6 +398,7 @@ target_sources(ccamera_core PRIVATE
     src/web/WebStatus.cpp
     src/web/Http.cpp
     src/web/RuntimeWebRouter.cpp
+    src/web/MjpegStream.cpp
 )
 
 target_include_directories(ccamera_core PUBLIC
@@ -413,6 +415,10 @@ target_link_libraries(ccamera_core PUBLIC
 
 target_link_libraries(ccamera_core PUBLIC
     opencv_imgproc
+)
+
+target_link_libraries(ccamera_core PUBLIC
+    opencv_imgcodecs
 )
 
 target_link_libraries(ccamera_core PUBLIC
@@ -478,6 +484,7 @@ if (WIN32)
     foreach (_opencv_runtime_target IN ITEMS
             opencv_core
             opencv_highgui
+            opencv_imgcodecs
             opencv_imgproc
             opencv_objdetect
             opencv_videoio)
@@ -611,6 +618,15 @@ if (CCAMERA_BUILD_TESTS)
     add_executable(test_http_router tests/test_http_router.cpp)
     target_link_libraries(test_http_router PRIVATE ccamera_core)
     add_test(NAME test_http_router COMMAND test_http_router)
+
+    add_executable(test_mjpeg_stream tests/test_mjpeg_stream.cpp)
+    target_link_libraries(test_mjpeg_stream PRIVATE ccamera_core)
+    add_test(
+        NAME test_mjpeg_stream
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_mjpeg_stream>
+    )
 
     add_executable(test_app_config tests/test_app_config.cpp)
     target_link_libraries(test_app_config PRIVATE ccamera_core)

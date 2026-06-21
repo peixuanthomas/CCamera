@@ -857,7 +857,7 @@ git commit -m "feat: add runtime web router"
 - Modify after verification: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_mjpeg_stream.cpp`:
 
@@ -917,7 +917,7 @@ Add test target:
     )
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 
@@ -928,7 +928,7 @@ cmake --build build --config Debug --target test_mjpeg_stream
 
 Expected: build fails because `web/MjpegStream.hpp` does not exist.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `src/web/MjpegStream.hpp`:
 
@@ -1023,7 +1023,7 @@ target_link_libraries(ccamera_core PUBLIC
 
 Also add `opencv_imgcodecs` to Windows runtime deployment loops where OpenCV runtime targets are enumerated.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 
@@ -1035,7 +1035,7 @@ ctest --test-dir build -C Debug -R test_mjpeg_stream --output-on-failure
 
 Expected: focused CTest passes.
 
-- [ ] **Step 5: Update plan and discoveries**
+- [x] **Step 5: Update plan and discoveries**
 
 Check off Task 4 steps in this plan. Append:
 
@@ -1043,7 +1043,7 @@ Check off Task 4 steps in this plan. Append:
 - 2026-06-21: Runtime HTML UI Task 4 added MJPEG JPEG encoding through OpenCV imgcodecs, overlay reuse, and generated fallback frames for no-camera states. Focused `test_mjpeg_stream` passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
