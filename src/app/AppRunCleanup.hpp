@@ -8,6 +8,7 @@ class AppRunCleanup {
 public:
     AppRunCleanup(std::function<void()> stop_recognition,
                   std::function<void()> stop_command,
+                  std::function<void()> stop_web,
                   std::function<void()> stop_camera);
     ~AppRunCleanup();
 
@@ -19,6 +20,7 @@ public:
 private:
     std::function<void()> stop_recognition_;
     std::function<void()> stop_command_;
+    std::function<void()> stop_web_;
     std::function<void()> stop_camera_;
     bool active_ = true;
 };

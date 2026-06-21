@@ -30,6 +30,14 @@ std::vector<RecognitionResult> RecognitionResultsStore::results_for_sequence(std
     return results_;
 }
 
+std::vector<RecognitionResult> RecognitionResultsStore::latest_results() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!last_error_.empty()) {
+        return {};
+    }
+    return results_;
+}
+
 RecognitionStatus RecognitionResultsStore::status() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return {sequence_, last_error_};

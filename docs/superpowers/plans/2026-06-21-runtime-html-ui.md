@@ -1470,7 +1470,7 @@ git commit -m "feat: add localhost runtime web server"
 - Modify after verification: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Update `tests/test_app_run_cleanup.cpp` to expect a fourth cleanup callback named `stop_web`. Keep the existing test assertions, and add a `web_stopped` boolean that must become true when cleanup runs.
 
@@ -1517,7 +1517,7 @@ Add CMake target:
     )
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -1527,7 +1527,7 @@ cmake --build build --config Debug --target test_app_run_cleanup test_app_web_co
 
 Expected: build fails because `AppRunCleanup` does not accept `stop_web` and `AppController` does not have `web_commands_`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Modify `src/app/AppRunCleanup.hpp` constructor and fields:
 
@@ -1680,7 +1680,7 @@ Store FPS after it is computed:
 fps_ = fps;
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -1692,7 +1692,7 @@ ctest --test-dir build -C Debug -R "test_app_run_cleanup|test_app_web_commands" 
 
 Expected: focused tests pass.
 
-- [ ] **Step 5: Update plan and discoveries**
+- [x] **Step 5: Update plan and discoveries**
 
 Check off Task 6 steps in this plan. Append:
 
@@ -1700,7 +1700,7 @@ Check off Task 6 steps in this plan. Append:
 - 2026-06-21: Runtime HTML UI Task 6 integrated web command consumption and web server lifecycle into `AppController`, including cleanup on exception paths. Focused app cleanup/web-command tests passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 

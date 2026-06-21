@@ -78,7 +78,8 @@ void PreviewWindow::show(
     const cv::Mat& frame,
     const std::vector<RecognitionResult>& results,
     const FaceDatabaseSnapshot& database,
-    double fps) {
+    double fps,
+    const std::string& status) {
     cv::Mat output = frame.clone();
     draw_overlay(output, results);
     draw_controls(output, database, fps);
@@ -86,6 +87,10 @@ void PreviewWindow::show(
     std::ostringstream text;
     text << "FPS: " << static_cast<int>(fps);
     cv::putText(output, text.str(), {12, 28}, cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+
+    if (!status.empty()) {
+        cv::putText(output, status, {12, 58}, cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 215, 255), 2, cv::LINE_AA);
+    }
 
     cv::imshow(name_, output);
 }

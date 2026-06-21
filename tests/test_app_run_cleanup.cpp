@@ -23,7 +23,8 @@ void PreviewWindow::show(
     const cv::Mat&,
     const std::vector<RecognitionResult>&,
     const FaceDatabaseSnapshot&,
-    double) {}
+    double,
+    const std::string&) {}
 
 std::vector<Command> PreviewWindow::consume_commands() {
     return {};
@@ -42,12 +43,14 @@ bool PreviewWindow::accepting_text_input() const {
 int main() {
     bool recognition_stopped = false;
     bool command_stopped = false;
+    bool web_stopped = false;
     bool camera_stopped = false;
 
     try {
         ccamera::AppRunCleanup cleanup(
             [&] { recognition_stopped = true; },
             [&] { command_stopped = true; },
+            [&] { web_stopped = true; },
             [&] { camera_stopped = true; });
         throw std::runtime_error("preview loop failed");
     } catch (const std::runtime_error&) {
@@ -55,22 +58,26 @@ int main() {
 
     assert(recognition_stopped);
     assert(command_stopped);
+    assert(web_stopped);
     assert(camera_stopped);
 
     recognition_stopped = false;
     command_stopped = false;
+    web_stopped = false;
     camera_stopped = false;
 
     {
         ccamera::AppRunCleanup cleanup(
             [&] { recognition_stopped = true; },
             [&] { command_stopped = true; },
+            [&] { web_stopped = true; },
             [&] { camera_stopped = true; });
         cleanup.dismiss();
     }
 
     assert(!recognition_stopped);
     assert(!command_stopped);
+    assert(!web_stopped);
     assert(!camera_stopped);
 
     bool saw_missing_model_error = false;

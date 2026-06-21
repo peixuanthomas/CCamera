@@ -20,6 +20,10 @@ public:
     void store_results(std::uint64_t sequence, std::vector<RecognitionResult> results);
     void store_error(std::uint64_t sequence, const std::string& error);
     std::vector<RecognitionResult> results_for_sequence(std::uint64_t sequence) const;
+    // Most recent successful results regardless of sequence. The live preview shows
+    // the newest captured frame while recognition runs a few frames behind, so the
+    // overlay must use the latest available results instead of an exact sequence match.
+    std::vector<RecognitionResult> latest_results() const;
     RecognitionStatus status() const;
 
 private:

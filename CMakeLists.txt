@@ -678,6 +678,14 @@ if (CCAMERA_BUILD_TESTS)
     target_link_libraries(test_app_run_cleanup PRIVATE ccamera_core)
     add_test(NAME test_app_run_cleanup COMMAND test_app_run_cleanup)
 
+    add_executable(test_app_web_commands tests/test_app_web_commands.cpp)
+    target_compile_definitions(test_app_web_commands PRIVATE CCAMERA_TEST_HOOKS)
+    target_link_libraries(test_app_web_commands PRIVATE ccamera_core)
+    add_test(NAME test_app_web_commands COMMAND test_app_web_commands)
+    set_tests_properties(test_app_web_commands PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+
     add_executable(test_offline_virtual_dataset tests/test_offline_virtual_dataset.cpp)
     target_link_libraries(test_offline_virtual_dataset PRIVATE ccamera_core)
     add_test(

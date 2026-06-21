@@ -17,7 +17,8 @@ public:
         const cv::Mat& frame,
         const std::vector<RecognitionResult>& results,
         const FaceDatabaseSnapshot& database,
-        double fps);
+        double fps,
+        const std::string& status = {});
     std::vector<Command> consume_commands();
     std::vector<Command> handle_key(int key);
     bool accepting_text_input() const;

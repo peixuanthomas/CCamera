@@ -18,8 +18,7 @@ std::vector<RecognitionResult> recognize_frame_faces(
         result.detection = face;
         result.frame_sequence = frame.sequence;
         try {
-            const cv::Mat aligned = aligner.align(frame.image, face);
-            const FaceEmbedding embedding = extractor.extract(aligned);
+            const FaceEmbedding embedding = extractor.embed(frame.image, face, aligner);
             const MatchResult match = recognizer.match(embedding, database);
             result.label = match.label;
             result.similarity = match.similarity;

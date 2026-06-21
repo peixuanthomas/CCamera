@@ -15,6 +15,7 @@ class OpenCvZooFaceFeatureExtractor final : public FaceEmbeddingService {
 public:
     explicit OpenCvZooFaceFeatureExtractor(const std::string& model_path);
     FaceEmbedding extract(const cv::Mat& aligned_face) override;
+    FaceEmbedding embed(const cv::Mat& frame, const FaceDetection& detection, const FaceAligner& aligner) override;
 
 private:
     cv::Ptr<cv::FaceRecognizerSF> recognizer_;

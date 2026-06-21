@@ -12,6 +12,8 @@
 #include "face/FaceServices.hpp"
 #include "face/Recognizer.hpp"
 #include "inference/OnnxRuntimeCpuEngine.hpp"
+#include "web/RuntimeWebServer.hpp"
+#include "web/WebCommandQueue.hpp"
 
 #include <atomic>
 #include <memory>
@@ -28,12 +30,23 @@ public:
     explicit AppController(AppConfig config);
     int run();
 
+#ifdef CCAMERA_TEST_HOOKS
+    void enqueue_web_command_for_test(Command command) { web_commands_.push(command); }
+    void apply_commands_for_test(bool& running) { apply_commands(running); }
+    bool enrollment_active_for_test() const { return enrollment_session_.active(); }
+    std::string status_message_for_test() const { return status_message(); }
+#endif
+
 private:
     std::vector<RecognitionResult> process_frame(const Frame& frame);
     void recognition_loop();
     void apply_command(const Command& command, bool& running);
     void apply_commands(bool& running);
     void handle_enrollment(const cv::Mat& image, const std::vector<FaceDetection>& faces, Clock::time_point now);
+    void set_status_message(const std::string& message);
+    std::string status_message() const;
+    WebStatusSnapshot web_status_snapshot() const;
+    std::vector<unsigned char> web_stream_frame() const;
 
     AppConfig config_;
     FrameBuffer frame_buffer_;
@@ -50,6 +63,11 @@ private:
     std::thread recognition_thread_;
     RecognitionResultsStore recognition_results_;
     std::uint64_t last_processed_sequence_ = 0;
+    mutable std::mutex status_mutex_;
+    std::string status_message_;
+    WebCommandQueue web_commands_;
+    std::unique_ptr<RuntimeWebServer> web_server_;
+    double fps_ = 0.0;
 };
 
 }  // namespace ccamera
