@@ -21,15 +21,32 @@ bool is_escape_key(int key) {
     return key == 27;
 }
 
-bool is_supported_name_char(int key) {
-    return key >= 32 && key <= 126;
-}
-
 std::vector<Command> command_if_named(CommandType type, const std::string& name) {
     if (name.empty()) {
         return {};
     }
     return {Command{type, name}};
+}
+
+bool is_supported_name_char(int key) {
+    return key >= 32 && key <= 126;
+}
+
+bool is_x11_special_keysym(int key) {
+    return (key & 0xff00) == 0xff00;
+}
+
+int normalize_key(int key) {
+    if (key <= 0xff) {
+        return key;
+    }
+
+    const int low_byte = key & 0xff;
+    if (is_x11_special_keysym(key) && !is_enter_key(low_byte) && !is_backspace_key(low_byte) &&
+        !is_escape_key(low_byte)) {
+        return -1;
+    }
+    return low_byte;
 }
 
 }  // namespace
@@ -76,26 +93,30 @@ std::vector<Command> RuntimeControls::key(int key) {
     if (mode_ == RuntimeControlMode::Idle) {
         return {};
     }
-    if (is_escape_key(key)) {
+    const int normalized_key = normalize_key(key);
+    if (normalized_key < 0) {
+        return {};
+    }
+    if (is_escape_key(normalized_key)) {
         mode_ = RuntimeControlMode::Idle;
         input_text_.clear();
         return {};
     }
-    if (is_backspace_key(key)) {
+    if (is_backspace_key(normalized_key)) {
         if (!input_text_.empty()) {
             input_text_.pop_back();
         }
         return {};
     }
-    if (is_enter_key(key)) {
+    if (is_enter_key(normalized_key)) {
         const auto type = mode_ == RuntimeControlMode::EnteringEnrollName ? CommandType::Enroll : CommandType::Delete;
         const std::string name = input_text_;
         mode_ = RuntimeControlMode::Idle;
         input_text_.clear();
         return command_if_named(type, name);
     }
-    if (is_supported_name_char(key) && input_text_.size() < 64) {
-        input_text_.push_back(static_cast<char>(key));
+    if (is_supported_name_char(normalized_key) && input_text_.size() < 64) {
+        input_text_.push_back(static_cast<char>(normalized_key));
     }
     return {};
 }
