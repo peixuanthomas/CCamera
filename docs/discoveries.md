@@ -48,3 +48,4 @@
 - 2026-06-21: Runtime HTML UI Task 2 added `WebStatusSnapshot` JSON serialization for browser status without exposing person ids or raw embeddings. Focused `test_web_status` passed.
 - 2026-06-21: Runtime HTML UI Task 3 added an embedded browser dashboard and pure HTTP route handling for `/`, `/api/status`, `/api/commands`, and `/stream.mjpg`. Focused `test_http_router` passed.
 - 2026-06-21: Runtime HTML UI Task 4 added MJPEG JPEG encoding through OpenCV imgcodecs, overlay reuse, and generated fallback frames for no-camera states. Focused `test_mjpeg_stream` passed.
+- 2026-06-21: Runtime HTML UI Task 5 added `RuntimeWebServer`, binding only to loopback with automatic port selection and clean start/stop lifecycle. Focused `test_runtime_web_server` passed.

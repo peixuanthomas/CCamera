@@ -1062,7 +1062,7 @@ git commit -m "feat: add mjpeg web stream formatting"
 - Modify after verification: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_runtime_web_server.cpp`:
 
@@ -1117,7 +1117,7 @@ if (WIN32)
 endif()
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 
@@ -1127,7 +1127,7 @@ cmake --build build --config Debug --target test_runtime_web_server
 
 Expected: build fails because `web/RuntimeWebServer.hpp` does not exist.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `src/web/RuntimeWebServer.hpp`:
 
@@ -1428,7 +1428,7 @@ Add source:
     src/web/RuntimeWebServer.cpp
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 
@@ -1440,7 +1440,7 @@ ctest --test-dir build -C Debug -R test_runtime_web_server --output-on-failure
 
 Expected: focused CTest passes and leaves no long-running server process.
 
-- [ ] **Step 5: Update plan and discoveries**
+- [x] **Step 5: Update plan and discoveries**
 
 Check off Task 5 steps in this plan. Append:
 
@@ -1448,7 +1448,7 @@ Check off Task 5 steps in this plan. Append:
 - 2026-06-21: Runtime HTML UI Task 5 added `RuntimeWebServer`, binding only to loopback with automatic port selection and clean start/stop lifecycle. Focused `test_runtime_web_server` passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 

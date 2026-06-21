@@ -399,6 +399,7 @@ target_sources(ccamera_core PRIVATE
     src/web/Http.cpp
     src/web/RuntimeWebRouter.cpp
     src/web/MjpegStream.cpp
+    src/web/RuntimeWebServer.cpp
 )
 
 target_include_directories(ccamera_core PUBLIC
@@ -436,6 +437,10 @@ target_link_libraries(ccamera_core PUBLIC
 target_link_libraries(ccamera_core PUBLIC
     ONNXRuntime::ONNXRuntime
 )
+
+if (WIN32)
+    target_link_libraries(ccamera_core PUBLIC ws2_32)
+endif()
 
 add_executable(ccamera
     src/main.cpp
@@ -627,6 +632,10 @@ if (CCAMERA_BUILD_TESTS)
             "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
             $<TARGET_FILE:test_mjpeg_stream>
     )
+
+    add_executable(test_runtime_web_server tests/test_runtime_web_server.cpp)
+    target_link_libraries(test_runtime_web_server PRIVATE ccamera_core)
+    add_test(NAME test_runtime_web_server COMMAND test_runtime_web_server)
 
     add_executable(test_app_config tests/test_app_config.cpp)
     target_link_libraries(test_app_config PRIVATE ccamera_core)
