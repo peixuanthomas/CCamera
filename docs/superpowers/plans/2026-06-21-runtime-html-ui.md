@@ -500,7 +500,7 @@ git commit -m "feat: serialize web runtime status"
 - Modify after verification: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_http_router.cpp`:
 
@@ -576,7 +576,7 @@ Add CMake target:
     add_test(NAME test_http_router COMMAND test_http_router)
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 
@@ -586,7 +586,7 @@ cmake --build build --config Debug --target test_http_router
 
 Expected: build fails because `web/RuntimeWebRouter.hpp` does not exist.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `src/web/Http.hpp`:
 
@@ -819,7 +819,7 @@ Add sources to `ccamera_core`:
     src/web/RuntimeWebRouter.cpp
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 
@@ -830,7 +830,7 @@ ctest --test-dir build -C Debug -R test_http_router --output-on-failure
 
 Expected: build succeeds and focused CTest passes.
 
-- [ ] **Step 5: Update plan and discoveries**
+- [x] **Step 5: Update plan and discoveries**
 
 Check off Task 3 steps in this plan. Append:
 
@@ -838,7 +838,7 @@ Check off Task 3 steps in this plan. Append:
 - 2026-06-21: Runtime HTML UI Task 3 added an embedded browser dashboard and pure HTTP route handling for `/`, `/api/status`, `/api/commands`, and `/stream.mjpg`. Focused `test_http_router` passed.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
