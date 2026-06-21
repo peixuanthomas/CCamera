@@ -26,6 +26,47 @@ void draw_text(cv::Mat& frame, const std::string& text, cv::Point origin, double
     cv::putText(frame, text, origin, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(245, 245, 245), 1, cv::LINE_AA);
 }
 
+int rendered_text_width(const std::string& text, double scale, int thickness) {
+    int baseline = 0;
+    return cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, scale, thickness, &baseline).width;
+}
+
+std::string fit_tail_text(const std::string& text, double scale, int thickness, int max_width) {
+    if (text.empty() || max_width <= 0) {
+        return {};
+    }
+    if (rendered_text_width(text, scale, thickness) <= max_width) {
+        return text;
+    }
+
+    const std::string marker = "...";
+    if (rendered_text_width(marker, scale, thickness) > max_width) {
+        return {};
+    }
+
+    std::string best = marker;
+    for (std::size_t start = text.size(); start > 0; --start) {
+        const std::string candidate = marker + text.substr(start - 1);
+        if (rendered_text_width(candidate, scale, thickness) > max_width) {
+            break;
+        }
+        best = candidate;
+    }
+    return best;
+}
+
+void draw_input_box(cv::Mat& frame, const cv::Rect& rect, const std::string& prompt, const std::string& text) {
+    cv::rectangle(frame, rect, cv::Scalar(18, 21, 26), cv::FILLED, cv::LINE_AA);
+    cv::rectangle(frame, rect, cv::Scalar(160, 178, 205), 1, cv::LINE_AA);
+    draw_text(frame, prompt, {rect.x + 10, rect.y + 17}, 0.42);
+    if (!text.empty()) {
+        constexpr double kFieldScale = 0.58;
+        constexpr int kFieldThickness = 1;
+        const std::string visible_text = fit_tail_text(text, kFieldScale, kFieldThickness, rect.width - 20);
+        draw_text(frame, visible_text, {rect.x + 10, rect.y + 38}, kFieldScale);
+    }
+}
+
 }  // namespace
 
 PreviewWindow::PreviewWindow(std::string name) : name_(std::move(name)) {
@@ -95,9 +136,18 @@ void PreviewWindow::draw_controls(cv::Mat& frame, const FaceDatabaseSnapshot& da
     draw_button(frame, latest_layout_.list_button, "List", cv::Scalar(70, 90, 128));
     draw_button(frame, latest_layout_.quit_button, "Quit", cv::Scalar(86, 86, 92));
 
-    y = latest_layout_.quit_button.y + latest_layout_.quit_button.height + 28;
-    draw_text(frame, controls_.prompt_text(), {left, y});
-    y += 28;
+    y = latest_layout_.quit_button.y + latest_layout_.quit_button.height + 24;
+    if (controls_.mode() == RuntimeControlMode::Idle) {
+        draw_text(frame, controls_.prompt_text(), {left, y});
+        y += 28;
+    } else {
+        const int input_width = std::max(1, latest_layout_.panel.width - 32);
+        const cv::Rect input_rect(left, y - 14, input_width, 48);
+        const std::string prompt =
+            controls_.mode() == RuntimeControlMode::EnteringEnrollName ? "Enroll name" : "Delete name";
+        draw_input_box(frame, input_rect, prompt, controls_.input_text());
+        y = input_rect.y + input_rect.height + 22;
+    }
     draw_text(frame, "Enrolled", {left, y}, 0.58);
     y += 24;
 
