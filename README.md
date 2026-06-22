@@ -57,6 +57,18 @@ The preview window also includes a right-side control panel:
 
 Press `Q` or `Esc` in the preview window to close the app when the panel is not asking for a name. Press `Esc` while entering a name to cancel that input.
 
+## Runtime Browser UI
+
+When the app starts, it also starts a local browser UI bound to `127.0.0.1` on an automatically selected port. The console prints the URL:
+
+```text
+Web UI: http://127.0.0.1:<port>
+```
+
+Open that URL in a local browser to view the live MJPEG preview, current recognition status, enrolled people, and runtime controls. The OpenCV preview window remains open and fully usable.
+
+The browser UI can enqueue `Enroll`, `Delete`, `List`, and `Quit` commands. Enrollment and deletion still use the existing local database flow and persist to the configured `database_path`, normally `data/face_db.json`. The UI is localhost-only; it does not provide LAN or remote access.
+
 ## Offline Virtual Dataset Test
 
 The automated test suite includes a no-camera virtual dataset path:

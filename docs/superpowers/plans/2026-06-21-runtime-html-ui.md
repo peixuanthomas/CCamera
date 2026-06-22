@@ -1716,7 +1716,7 @@ git commit -m "feat: integrate runtime web ui"
 - Modify: `docs/discoveries.md`
 - Update: `docs/superpowers/plans/2026-06-21-runtime-html-ui.md`
 
-- [ ] **Step 1: Update README**
+- [x] **Step 1: Update README**
 
 Add this section after the existing preview-window control description:
 
@@ -1734,7 +1734,7 @@ Open that URL in a local browser to view the live MJPEG preview, current recogni
 The browser UI can enqueue `Enroll`, `Delete`, `List`, and `Quit` commands. Enrollment and deletion still use the existing local database flow and persist to the configured `database_path`, normally `data/face_db.json`. The UI is localhost-only; it does not provide LAN or remote access.
 ```
 
-- [ ] **Step 2: Run full automated verification**
+- [x] **Step 2: Run full automated verification**
 
 Run:
 
@@ -1746,7 +1746,7 @@ ctest --test-dir build -C Debug --output-on-failure
 
 Expected: full build succeeds and all automated tests pass.
 
-- [ ] **Step 3: Run bounded startup probe**
+- [x] **Step 3: Run bounded startup probe**
 
 Run:
 
@@ -1758,7 +1758,7 @@ if (!$process.HasExited) { Stop-Process -Id $process.Id -Force }
 
 Expected: process stays alive until stopped or exits with a documented camera/model/runtime error. Do not claim live browser or camera success from this probe alone.
 
-- [ ] **Step 4: Record verification discovery**
+- [x] **Step 4: Record verification discovery**
 
 Append:
 
@@ -1768,7 +1768,7 @@ Append:
 
 If full CTest fails, record the exact failing test and error instead of the passing line, then fix before committing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Run:
 
