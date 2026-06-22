@@ -6,6 +6,8 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -164,6 +166,7 @@ void RuntimeWebServer::stop() {
     if (thread_.joinable()) {
         thread_.join();
     }
+    join_all_clients();
 #ifdef _WIN32
     WSACleanup();
 #endif
@@ -217,20 +220,61 @@ void RuntimeWebServer::run() {
             }
             continue;
         }
-        const std::string request_text = receive_request(client);
-        const HttpRequest request = parse_request_text(request_text);
-        if (request.method == "GET" && request.path == "/stream.mjpg") {
-            send_mjpeg_stream(client, router_, running_);
-        } else {
-            const HttpResponse response = router_.handle(request);
-            send_all(client, format_http_response(response));
-        }
-        close_socket(client);
+
+        // Each connection is served on its own thread so a long-lived MJPEG
+        // stream cannot starve the status/command endpoints.
+        auto finished = std::make_shared<std::atomic<bool>>(false);
+        const auto client_handle = static_cast<std::intptr_t>(client);
+        std::thread worker([this, client_handle, finished] {
+            handle_client(client_handle);
+            finished->store(true);
+        });
+
+        std::lock_guard<std::mutex> lock(clients_mutex_);
+        reap_finished_clients();
+        clients_.push_back({std::move(worker), std::move(finished)});
     }
 
     close_socket(server);
     listener_ = -1;
     port_ = 0;
+}
+
+void RuntimeWebServer::handle_client(std::intptr_t client_handle) {
+    const SocketHandle client = static_cast<SocketHandle>(client_handle);
+    const std::string request_text = receive_request(client);
+    const HttpRequest request = parse_request_text(request_text);
+    if (request.method == "GET" && request.path == "/stream.mjpg") {
+        send_mjpeg_stream(client, router_, running_);
+    } else {
+        const HttpResponse response = router_.handle(request);
+        send_all(client, format_http_response(response));
+    }
+    close_socket(client);
+}
+
+void RuntimeWebServer::reap_finished_clients() {
+    clients_.erase(
+        std::remove_if(clients_.begin(), clients_.end(), [](ClientThread& worker) {
+            if (worker.finished->load()) {
+                if (worker.thread.joinable()) {
+                    worker.thread.join();
+                }
+                return true;
+            }
+            return false;
+        }),
+        clients_.end());
+}
+
+void RuntimeWebServer::join_all_clients() {
+    std::lock_guard<std::mutex> lock(clients_mutex_);
+    for (auto& worker : clients_) {
+        if (worker.thread.joinable()) {
+            worker.thread.join();
+        }
+    }
+    clients_.clear();
 }
 
 void RuntimeWebServer::close_listener() {

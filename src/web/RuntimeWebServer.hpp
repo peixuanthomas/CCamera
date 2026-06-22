@@ -5,8 +5,10 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace ccamera {
 
@@ -27,12 +29,22 @@ public:
     std::string url() const;
 
 private:
+    struct ClientThread {
+        std::thread thread;
+        std::shared_ptr<std::atomic<bool>> finished;
+    };
+
     void run();
+    void handle_client(std::intptr_t client_handle);
+    void reap_finished_clients();
+    void join_all_clients();
     void close_listener();
 
     RuntimeWebRouter router_;
     std::atomic<bool> running_{false};
     std::thread thread_;
+    std::mutex clients_mutex_;
+    std::vector<ClientThread> clients_;
     std::intptr_t listener_ = -1;
     std::uint16_t port_ = 0;
 };
