@@ -21,19 +21,23 @@ body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:#eef2f7;color
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 button,input{font:inherit}input{width:100%;box-sizing:border-box;margin:6px 0 10px;padding:9px;border:1px solid #cbd5e1;border-radius:6px}
 button{padding:9px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer}.primary{background:#15803d;color:#fff}.danger{background:#dc2626;color:#fff}.dark{background:#334155;color:#fff}
-.person{display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px}
+.person{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;margin-top:8px}
+.person .meta{min-width:0}.person .meta b{word-break:break-word}.person .meta small{color:#64748b}
+.person button{flex:none;padding:5px 10px;font-size:13px}
 @media(max-width:900px){.shell{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <main class="shell">
 <section><h1>CCamera</h1><img class="video" src="/stream.mjpg" alt="Live camera stream"><div class="status" id="status">Connecting...</div></section>
-<aside class="panel"><h2>Actions</h2><label>Name</label><input id="name" autocomplete="off"><div class="actions"><button class="primary" onclick="sendCommand('enroll')">Enroll</button><button class="danger" onclick="confirmDelete()">Delete</button><button onclick="refreshStatus()">Refresh</button><button class="dark" onclick="sendCommand('quit')">Quit</button></div><h2>People</h2><div id="people"></div></aside>
+<aside class="panel"><h2>Actions</h2><label>Name</label><input id="name" autocomplete="off"><div class="actions"><button class="primary" onclick="sendCommand('enroll')">Enroll</button><button onclick="refreshStatus()">Refresh</button><button class="dark" onclick="sendCommand('quit')">Quit</button></div><h2>People</h2><div id="people"></div></aside>
 </main>
 <script>
-async function sendCommand(type){const name=document.getElementById('name').value;const body=(type==='enroll'||type==='delete')?{type,name}:{type};const r=await fetch('/api/commands',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){const j=await r.json();alert(j.error||'Command failed')}await refreshStatus()}
-function confirmDelete(){const name=document.getElementById('name').value.trim();if(name&&confirm('Delete '+name+' from the local database?'))sendCommand('delete')}
-async function refreshStatus(){const r=await fetch('/api/status');const j=await r.json();document.getElementById('status').textContent=(j.running?'Running':'Stopped')+' | FPS '+Math.round(j.fps)+' | '+j.status;document.getElementById('people').innerHTML=j.people.map(p=>'<div class="person"><b>'+p.name+'</b><span>'+p.templates+' templates</span></div>').join('')||'<p>No enrolled people</p>'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function postCommand(body){const r=await fetch('/api/commands',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.error||'Command failed')}await refreshStatus()}
+async function sendCommand(type){const name=document.getElementById('name').value;return postCommand(type==='enroll'?{type,name}:{type})}
+async function deletePerson(name){if(confirm('Delete '+name+' from the local database?'))await postCommand({type:'delete',name})}
+async function refreshStatus(){const r=await fetch('/api/status');const j=await r.json();document.getElementById('status').textContent=(j.running?'Running':'Stopped')+' | FPS '+Math.round(j.fps)+' | '+j.status;const people=document.getElementById('people');if(!j.people.length){people.innerHTML='<p>No enrolled people</p>';return}people.innerHTML=j.people.map(p=>'<div class="person"><span class="meta"><b>'+esc(p.name)+'</b><br><small>'+p.templates+' templates</small></span><button class="danger" data-name="'+esc(p.name)+'">Delete</button></div>').join('');people.querySelectorAll('button[data-name]').forEach(b=>b.onclick=()=>deletePerson(b.dataset.name))}
 setInterval(refreshStatus,1000);refreshStatus();
 </script>
 </body>
