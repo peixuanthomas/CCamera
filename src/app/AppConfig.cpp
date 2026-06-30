@@ -46,8 +46,13 @@ void validate_app_config(const AppConfig& config) {
     require_non_empty("detector_model", config.detector_model);
     require_non_empty("recognizer_model", config.recognizer_model);
     require_non_empty("database_path", config.database_path);
+    require_non_empty("database_passphrase", config.database_passphrase);
     if (config.inference_backend != "onnxruntime_cpu" && config.inference_backend != "opencv_zoo") {
         throw std::invalid_argument("unknown inference_backend: " + config.inference_backend);
+    }
+    if (config.recognizer_backend != "onnxruntime_cpu" && config.recognizer_backend != "opencv_zoo" &&
+        config.recognizer_backend != "insightface_arcface") {
+        throw std::invalid_argument("unknown recognizer_backend: " + config.recognizer_backend);
     }
     require_positive("detection_interval", config.detection_interval);
     require_probability("detection_threshold", config.detection_threshold);
@@ -74,7 +79,13 @@ AppConfig load_app_config(const std::string& path) {
     set_if_present(json, "detector_model", config.detector_model);
     set_if_present(json, "recognizer_model", config.recognizer_model);
     set_if_present(json, "database_path", config.database_path);
+    set_if_present(json, "database_passphrase", config.database_passphrase);
     set_if_present(json, "inference_backend", config.inference_backend);
+    if (json.contains("recognizer_backend")) {
+        config.recognizer_backend = json.at("recognizer_backend").get<std::string>();
+    } else {
+        config.recognizer_backend = config.inference_backend;
+    }
     set_if_present(json, "detection_interval", config.detection_interval);
     set_if_present(json, "detection_threshold", config.detection_threshold);
     set_if_present(json, "recognition_threshold", config.recognition_threshold);
@@ -102,7 +113,9 @@ void save_app_config(const std::string& path, const AppConfig& config) {
     json["detector_model"] = config.detector_model;
     json["recognizer_model"] = config.recognizer_model;
     json["database_path"] = config.database_path;
+    json["database_passphrase"] = config.database_passphrase;
     json["inference_backend"] = config.inference_backend;
+    json["recognizer_backend"] = config.recognizer_backend;
     json["detection_interval"] = config.detection_interval;
     json["detection_threshold"] = config.detection_threshold;
     json["recognition_threshold"] = config.recognition_threshold;

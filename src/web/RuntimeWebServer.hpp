@@ -3,6 +3,7 @@
 #include "web/RuntimeWebRouter.hpp"
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -27,6 +28,7 @@ public:
     bool running() const;
     std::uint16_t port() const;
     std::string url() const;
+    static constexpr std::size_t max_concurrent_connections() noexcept { return 8; }
 
 private:
     struct ClientThread {
@@ -39,9 +41,13 @@ private:
     void reap_finished_clients();
     void join_all_clients();
     void close_listener();
+    bool try_reserve_client();
+    void release_client();
 
+    std::string auth_token_;
     RuntimeWebRouter router_;
     std::atomic<bool> running_{false};
+    std::atomic<std::size_t> active_clients_{0};
     std::thread thread_;
     std::mutex clients_mutex_;
     std::vector<ClientThread> clients_;

@@ -22,6 +22,7 @@ struct FaceDatabaseSnapshot {
 class FaceDatabase {
 public:
     explicit FaceDatabase(std::string path);
+    FaceDatabase(std::string path, std::string passphrase);
 
     void load_or_create();
     void save() const;
@@ -31,6 +32,7 @@ public:
 
 private:
     std::string path_;
+    std::string passphrase_;
     mutable std::mutex mutex_;
     FaceDatabaseSnapshot data_;
 };

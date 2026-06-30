@@ -3,6 +3,7 @@
 #include "app/AppRunCleanup.hpp"
 #include "app/FrameRecognition.hpp"
 #include "camera/CameraCapture.hpp"
+#include "face/InsightFaceArcFaceFeatureExtractor.hpp"
 #include "face/OpenCvZooFaceDetector.hpp"
 #include "face/OpenCvZooFaceFeatureExtractor.hpp"
 #include "ui/PreviewWindow.hpp"
@@ -30,26 +31,50 @@ struct FaceBackendBundle {
     std::unique_ptr<FaceEmbeddingService> extractor;
 };
 
-FaceBackendBundle make_face_backend(const AppConfig& config) {
-    FaceBackendBundle bundle;
+void make_detector_backend(FaceBackendBundle& bundle, const AppConfig& config) {
     if (config.inference_backend == "opencv_zoo") {
         bundle.detector = std::make_unique<OpenCvZooFaceDetector>(
             config.detector_model,
             config.detection_threshold);
-        bundle.extractor = std::make_unique<OpenCvZooFaceFeatureExtractor>(
-            config.recognizer_model);
-        return bundle;
+        return;
     }
 
     if (config.inference_backend == "onnxruntime_cpu") {
         bundle.detector_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.detector_model);
-        bundle.recognizer_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.recognizer_model);
         bundle.detector = std::make_unique<FaceDetector>(*bundle.detector_engine, config.detection_threshold);
-        bundle.extractor = std::make_unique<FaceFeatureExtractor>(*bundle.recognizer_engine);
-        return bundle;
+        return;
     }
 
     throw std::invalid_argument("unknown inference_backend: " + config.inference_backend);
+}
+
+void make_recognizer_backend(FaceBackendBundle& bundle, const AppConfig& config) {
+    if (config.recognizer_backend == "opencv_zoo") {
+        bundle.extractor = std::make_unique<OpenCvZooFaceFeatureExtractor>(
+            config.recognizer_model);
+        return;
+    }
+
+    if (config.recognizer_backend == "onnxruntime_cpu") {
+        bundle.recognizer_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.recognizer_model);
+        bundle.extractor = std::make_unique<FaceFeatureExtractor>(*bundle.recognizer_engine);
+        return;
+    }
+
+    if (config.recognizer_backend == "insightface_arcface") {
+        bundle.recognizer_engine = std::make_unique<OnnxRuntimeCpuEngine>(config.recognizer_model);
+        bundle.extractor = std::make_unique<InsightFaceArcFaceFeatureExtractor>(*bundle.recognizer_engine);
+        return;
+    }
+
+    throw std::invalid_argument("unknown recognizer_backend: " + config.recognizer_backend);
+}
+
+FaceBackendBundle make_face_backend(const AppConfig& config) {
+    FaceBackendBundle bundle;
+    make_detector_backend(bundle, config);
+    make_recognizer_backend(bundle, config);
+    return bundle;
 }
 
 }  // namespace
@@ -57,7 +82,7 @@ FaceBackendBundle make_face_backend(const AppConfig& config) {
 AppController::AppController(AppConfig config)
     : config_(std::move(config)),
       aligner_(),
-      database_(config_.database_path),
+      database_(config_.database_path, config_.database_passphrase),
       recognizer_(config_.recognition_threshold),
       enrollment_session_(config_) {
     FaceBackendBundle backend = make_face_backend(config_);
@@ -262,7 +287,7 @@ int AppController::run() {
             [this] { return web_stream_frame(); });
         web_server_->start();
         std::cout << "Web UI: " << web_server_->url() << '\n';
-        set_status_message("Web UI: " + web_server_->url());
+        set_status_message("Web UI running on 127.0.0.1:" + std::to_string(web_server_->port()));
     } catch (const std::exception& error) {
         std::cerr << "Web UI failed to start: " << error.what() << '\n';
         set_status_message(std::string("Web UI failed: ") + error.what());

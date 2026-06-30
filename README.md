@@ -42,7 +42,9 @@ On Windows, `ccamera.exe` is a lightweight launcher. It validates the config and
 
 The default configuration uses the committed OpenCV Zoo YuNet and SFace models under `models/opencv_zoo/`. The app opens the live preview directly when launched without arguments.
 
-Use `ccamera.exe --config config/app.example.json` or another JSON file when you need to customize model paths, camera index, thresholds, or database path.
+`config/app.insightface.example.json` is an optional high-accuracy recognizer example. It keeps the OpenCV Zoo YuNet detector, switches `recognizer_backend` to `insightface_arcface`, and points the recognizer model at `models/insightface/buffalo_l/w600k_r50.onnx`. Download provenance and usage notes for that optional model are tracked in `models/insightface/SOURCES.md`.
+
+Use `ccamera.exe --config config/app.example.json` or another JSON file when you need to customize model paths, camera index, thresholds, database path, or `database_passphrase`.
 
 If model files are missing, the launcher reports the missing model path before loading camera or preview dependencies.
 
@@ -62,12 +64,24 @@ Press `Q` or `Esc` in the preview window to close the app when the panel is not 
 When the app starts, it also starts a local browser UI bound to `127.0.0.1` on an automatically selected port. The console prints the URL:
 
 ```text
-Web UI: http://127.0.0.1:<port>
+Web UI: http://127.0.0.1:<port>/?token=<runtime-token>
 ```
 
 Open that URL in a local browser to view the live MJPEG preview, current recognition status, enrolled people, and runtime controls. The OpenCV preview window remains open and fully usable.
 
 The browser UI can enqueue `Enroll`, `Delete`, `List`, and `Quit` commands. Enrollment and deletion still use the existing local database flow and persist to the configured `database_path`, normally `data/face_db.json`. The UI is localhost-only; it does not provide LAN or remote access.
+
+Each app run generates a random in-memory Web token. The `/` HTML page is the only unauthenticated endpoint; `/api/status`, `/api/commands`, and `/stream.mjpg` require either `X-CCamera-Token: <runtime-token>` or `?token=<runtime-token>`. `POST /api/commands` also rejects non-empty `Origin` values unless they exactly match the printed `http://127.0.0.1:<port>` origin. Missing `Origin` is allowed so local token clients and simple scripts can continue to work.
+
+Treat the printed token URL as local control access to the running app. Any local process or browser profile that can read or reuse that URL can view status and enqueue runtime commands while the app is running. The Web status endpoint must not expose `database_passphrase`, raw embeddings, or raw database JSON.
+
+## Database Passphrase
+
+`database_passphrase` is a local secret used by the encrypted face database backend. Keep it out of screenshots, logs, issue reports, and shared config files. Use a unique, high-entropy passphrase for real enrollments; replace the example value before storing identities.
+
+The passphrase is not shown in the OpenCV controls, startup UI, browser UI, Web status JSON, or console output. It is read from config and saved by `save_app_config()` so private config files can round-trip without losing the field.
+
+Encrypted database files and older plaintext JSON database files are intentionally incompatible. Do not point an encrypted config at an existing plaintext `face_db.json` and expect automatic upgrade. Move the plaintext file aside and re-enroll identities, or migrate through a dedicated one-time tool that reads plaintext explicitly and writes a fresh encrypted database with the chosen passphrase. Changing the passphrase for an existing encrypted database requires creating a new encrypted database or performing an explicit re-encryption migration.
 
 ## Offline Virtual Dataset Test
 
@@ -86,3 +100,11 @@ This contract applies to custom configs that set `inference_backend: "onnxruntim
 The detector input is `image`: a batch-1 NCHW float32 tensor using OpenCV BGR channel order. The detector output is `detections` with shape `[N, 15]`; each row is `[x1, y1, x2, y2, score, left_eye_x, left_eye_y, right_eye_x, right_eye_y, nose_x, nose_y, mouth_left_x, mouth_left_y, mouth_right_x, mouth_right_y]` in frame pixel coordinates.
 
 The recognizer input is `face`: a batch-1 NCHW float32 aligned face tensor using OpenCV BGR channel order. The recognizer output is `embedding` with shape `[N]` or `[1, N]`. Embeddings are L2-normalized before matching or storage.
+
+## InsightFace ArcFace Example Contract
+
+The InsightFace example uses `recognizer_backend: "insightface_arcface"` independently of the detector backend. It expects the `buffalo_l.zip` v0.7 package's `w600k_r50.onnx` model at `models/insightface/buffalo_l/w600k_r50.onnx`.
+
+InsightFace ArcFace embeddings are not compatible with the default OpenCV Zoo SFace embeddings or custom ONNX recognizer embeddings. Use the separate `data/face_db_insightface.json` path from the example config and re-enroll identities. Do not copy or reuse an existing face database across recognizer backends.
+
+The InsightFace recognizer contract uses input `data`: a batch-1 NCHW float32 aligned 112x112 RGB face tensor normalized with mean 127.5 and std 127.5. Output `fc1` is a 512-D ArcFace embedding. Treat `recognition_threshold` and `enrollment_consistency_threshold` as backend-specific calibration values; thresholds tuned for SFace should be re-measured for InsightFace before real use.

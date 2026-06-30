@@ -11,6 +11,7 @@ struct HttpRequest {
     std::string path;
     std::map<std::string, std::string> headers;
     std::string body;
+    std::string query;
 };
 
 struct HttpResponse {

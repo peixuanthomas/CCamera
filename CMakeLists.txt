@@ -383,11 +383,13 @@ target_sources(ccamera_core PRIVATE
     src/camera/CameraCapture.cpp
     src/camera/CameraCaptureDefault.cpp
     src/camera/FrameBuffer.cpp
+    src/face/DatabaseCrypto.cpp
     src/face/FaceAligner.cpp
     src/face/FaceDatabase.cpp
     src/face/FaceDetector.cpp
     src/face/FaceFeatureExtractor.cpp
     src/face/FaceServices.cpp
+    src/face/InsightFaceArcFaceFeatureExtractor.cpp
     src/face/OpenCvZooFaceDetector.cpp
     src/face/OpenCvZooFaceFeatureExtractor.cpp
     src/face/Recognizer.cpp
@@ -439,7 +441,7 @@ target_link_libraries(ccamera_core PUBLIC
 )
 
 if (WIN32)
-    target_link_libraries(ccamera_core PUBLIC ws2_32)
+    target_link_libraries(ccamera_core PUBLIC ws2_32 bcrypt)
 endif()
 
 add_executable(ccamera
@@ -599,6 +601,18 @@ if (CCAMERA_BUILD_TESTS)
             $<TARGET_FILE:test_face_feature_extraction>
     )
 
+    add_executable(
+        test_insightface_arcface_feature_extraction
+        tests/test_insightface_arcface_feature_extraction.cpp
+    )
+    target_link_libraries(test_insightface_arcface_feature_extraction PRIVATE ccamera_core)
+    add_test(
+        NAME test_insightface_arcface_feature_extraction
+        COMMAND ${CMAKE_COMMAND} -E env
+            "PATH=${CCAMERA_LOCAL_MINGW_PREFIX}/bin$<SEMICOLON>$ENV{PATH}"
+            $<TARGET_FILE:test_insightface_arcface_feature_extraction>
+    )
+
     add_executable(test_opencv_zoo_adapters tests/test_opencv_zoo_adapters.cpp)
     target_link_libraries(test_opencv_zoo_adapters PRIVATE ccamera_core)
     add_test(
@@ -720,8 +734,9 @@ if (CCAMERA_BUILD_TESTS)
             COMMAND ${CMAKE_COMMAND}
                 -DCCAMERA_TARGET_FILE=$<TARGET_FILE:ccamera>
                 -DCCAMERA_CONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/config/app.example.json
-                -DCCAMERA_WORKING_DIRECTORY=$<TARGET_FILE_DIR:ccamera>
+                -DCCAMERA_WORKING_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/default-runtime-probe
                 -DCCAMERA_STARTUP_MODE=default_runtime
+                -DCCAMERA_STARTUP_PROBE_DIR=${CMAKE_CURRENT_BINARY_DIR}/default-runtime-probe
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckExecutableStartup.cmake"
         )
         add_test(

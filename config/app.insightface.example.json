@@ -1,0 +1,18 @@
+{
+  "camera_index": 0,
+  "frame_width": 1280,
+  "frame_height": 720,
+  "detector_model": "models/opencv_zoo/face_detection_yunet_2023mar.onnx",
+  "recognizer_model": "models/insightface/buffalo_l/w600k_r50.onnx",
+  "database_path": "data/face_db_insightface.json",
+  "database_passphrase": "change-this-insightface-database-passphrase",
+  "inference_backend": "opencv_zoo",
+  "recognizer_backend": "insightface_arcface",
+  "detection_interval": 3,
+  "detection_threshold": 0.7,
+  "recognition_threshold": 0.45,
+  "enrollment_consistency_threshold": 0.55,
+  "enrollment_sample_count": 15,
+  "enrollment_timeout_seconds": 20,
+  "feature_worker_count": 2
+}

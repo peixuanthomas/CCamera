@@ -32,6 +32,15 @@ int main() {
     assert(recognizer.input_name == "face");
     assert(recognizer.output_name == "embedding");
     assert(recognizer.input_layout.find("NCHW") != std::string::npos);
+    assert(recognizer.input_layout.find("BGR") != std::string::npos);
+
+    const auto insightface = ccamera::insightface_arcface_model_contract();
+    assert(insightface.input_name == "data");
+    assert(insightface.output_name == "fc1");
+    assert(insightface.input_width == 112);
+    assert(insightface.input_height == 112);
+    assert(insightface.embedding_dimensions == 512);
+    assert(insightface.input_layout.find("RGB") != std::string::npos);
 
     const ccamera::Tensor valid{{1, 3, 2, 2}, std::vector<float>(12, 1.0f)};
     ccamera::validate_tensor_shape_and_values("image", valid);

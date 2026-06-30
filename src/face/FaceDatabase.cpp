@@ -1,11 +1,14 @@
 #include "face/FaceDatabase.hpp"
 
+#include "face/DatabaseCrypto.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -68,9 +71,112 @@ std::filesystem::path available_sibling_path(const std::filesystem::path& target
     throw std::runtime_error("failed to create temporary path for face database: " + target.string());
 }
 
+nlohmann::json snapshot_to_json(const FaceDatabaseSnapshot& snapshot) {
+    nlohmann::json json;
+    json["embedding_dimension"] = snapshot.embedding_dimension;
+    json["people"] = nlohmann::json::array();
+    for (const auto& person : snapshot.people) {
+        json["people"].push_back({
+            {"id", person.id},
+            {"name", person.name},
+            {"templates", person.templates},
+        });
+    }
+    return json;
+}
+
+FaceDatabaseSnapshot snapshot_from_json(const nlohmann::json& json) {
+    if (!json.is_object()) {
+        throw std::runtime_error("root must be an object");
+    }
+
+    FaceDatabaseSnapshot loaded;
+    if (json.contains("embedding_dimension")) {
+        if (!json.at("embedding_dimension").is_number_integer()) {
+            throw std::runtime_error("embedding_dimension must be an integer");
+        }
+        loaded.embedding_dimension = json.at("embedding_dimension").get<int>();
+    }
+    if (loaded.embedding_dimension < 0) {
+        throw std::runtime_error("negative embedding dimension");
+    }
+
+    if (!json.contains("people") || !json.at("people").is_array()) {
+        throw std::runtime_error("people must be an array");
+    }
+
+    for (const auto& person_json : json.at("people")) {
+        if (!person_json.is_object()) {
+            throw std::runtime_error("person must be an object");
+        }
+        if (!person_json.contains("id") || !person_json.at("id").is_string()) {
+            throw std::runtime_error("person id must be a string");
+        }
+        if (!person_json.contains("name") || !person_json.at("name").is_string()) {
+            throw std::runtime_error("person name must be a string");
+        }
+        if (!person_json.contains("templates") || !person_json.at("templates").is_array()) {
+            throw std::runtime_error("templates must be an array");
+        }
+        if (person_json.at("templates").empty()) {
+            throw std::runtime_error("templates must not be empty");
+        }
+
+        PersonRecord record;
+        record.id = person_json.at("id").get<std::string>();
+        record.name = person_json.at("name").get<std::string>();
+
+        if (loaded.embedding_dimension == 0) {
+            throw std::runtime_error("missing embedding dimension for " + record.name);
+        }
+
+        for (const auto& template_json : person_json.at("templates")) {
+            if (!template_json.is_array()) {
+                throw std::runtime_error("template must be an array for " + record.name);
+            }
+            if (template_json.empty()) {
+                throw std::runtime_error("template must not be empty for " + record.name);
+            }
+
+            std::vector<float> templ;
+            templ.reserve(template_json.size());
+            for (const auto& value_json : template_json) {
+                if (!value_json.is_number()) {
+                    throw std::runtime_error("template value must be numeric for " + record.name);
+                }
+                templ.push_back(value_json.get<float>());
+            }
+
+            validate_template(record.name, templ, loaded.embedding_dimension);
+            record.templates.push_back(std::move(templ));
+        }
+
+        loaded.people.push_back(std::move(record));
+    }
+
+    return loaded;
+}
+
+std::string read_file(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("failed to open face database for reading: " + path);
+    }
+
+    std::ostringstream contents;
+    contents << in.rdbuf();
+    if (!in.good() && !in.eof()) {
+        throw std::runtime_error("failed to read face database: " + path);
+    }
+    return contents.str();
+}
+
 }  // namespace
 
-FaceDatabase::FaceDatabase(std::string path) : path_(std::move(path)) {}
+FaceDatabase::FaceDatabase(std::string path) : FaceDatabase(std::move(path), {}) {}
+
+FaceDatabase::FaceDatabase(std::string path, std::string passphrase)
+    : path_(std::move(path)), passphrase_(std::move(passphrase)) {}
 
 void FaceDatabase::load_or_create() {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -79,82 +185,13 @@ void FaceDatabase::load_or_create() {
         return;
     }
 
-    std::ifstream in(path_);
-    if (!in) {
-        throw std::runtime_error("failed to open face database for reading: " + path_);
+    if (passphrase_.empty()) {
+        throw std::runtime_error("face database passphrase is required to load encrypted database: " + path_);
     }
 
     try {
-        nlohmann::json json;
-        in >> json;
-        if (!json.is_object()) {
-            throw std::runtime_error("root must be an object");
-        }
-
-        FaceDatabaseSnapshot loaded;
-        if (json.contains("embedding_dimension")) {
-            if (!json.at("embedding_dimension").is_number_integer()) {
-                throw std::runtime_error("embedding_dimension must be an integer");
-            }
-            loaded.embedding_dimension = json.at("embedding_dimension").get<int>();
-        }
-        if (loaded.embedding_dimension < 0) {
-            throw std::runtime_error("negative embedding dimension");
-        }
-
-        if (!json.contains("people") || !json.at("people").is_array()) {
-            throw std::runtime_error("people must be an array");
-        }
-
-        for (const auto& person_json : json.at("people")) {
-            if (!person_json.is_object()) {
-                throw std::runtime_error("person must be an object");
-            }
-            if (!person_json.contains("id") || !person_json.at("id").is_string()) {
-                throw std::runtime_error("person id must be a string");
-            }
-            if (!person_json.contains("name") || !person_json.at("name").is_string()) {
-                throw std::runtime_error("person name must be a string");
-            }
-            if (!person_json.contains("templates") || !person_json.at("templates").is_array()) {
-                throw std::runtime_error("templates must be an array");
-            }
-            if (person_json.at("templates").empty()) {
-                throw std::runtime_error("templates must not be empty");
-            }
-
-            PersonRecord record;
-            record.id = person_json.at("id").get<std::string>();
-            record.name = person_json.at("name").get<std::string>();
-
-            if (loaded.embedding_dimension == 0) {
-                throw std::runtime_error("missing embedding dimension for " + record.name);
-            }
-
-            for (const auto& template_json : person_json.at("templates")) {
-                if (!template_json.is_array()) {
-                    throw std::runtime_error("template must be an array for " + record.name);
-                }
-                if (template_json.empty()) {
-                    throw std::runtime_error("template must not be empty for " + record.name);
-                }
-
-                std::vector<float> templ;
-                templ.reserve(template_json.size());
-                for (const auto& value_json : template_json) {
-                    if (!value_json.is_number()) {
-                        throw std::runtime_error("template value must be numeric for " + record.name);
-                    }
-                    templ.push_back(value_json.get<float>());
-                }
-
-                validate_template(record.name, templ, loaded.embedding_dimension);
-                record.templates.push_back(std::move(templ));
-            }
-
-            loaded.people.push_back(std::move(record));
-        }
-
+        const std::string plaintext = database_crypto::decrypt_json(read_file(path_), passphrase_);
+        const FaceDatabaseSnapshot loaded = snapshot_from_json(nlohmann::json::parse(plaintext));
         data_ = std::move(loaded);
     } catch (const nlohmann::json::exception& ex) {
         throw std::runtime_error("invalid face database " + path_ + ": " + ex.what());
@@ -165,30 +202,26 @@ void FaceDatabase::load_or_create() {
 
 void FaceDatabase::save() const {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (passphrase_.empty()) {
+        throw std::runtime_error("face database passphrase is required to save encrypted database: " + path_);
+    }
+
     const auto parent = std::filesystem::path(path_).parent_path();
     if (!parent.empty()) {
         std::filesystem::create_directories(parent);
     }
 
-    nlohmann::json json;
-    json["embedding_dimension"] = data_.embedding_dimension;
-    json["people"] = nlohmann::json::array();
-    for (const auto& person : data_.people) {
-        json["people"].push_back({
-            {"id", person.id},
-            {"name", person.name},
-            {"templates", person.templates},
-        });
-    }
+    const std::string encrypted_json =
+        database_crypto::encrypt_json(snapshot_to_json(data_).dump(), passphrase_);
 
     const auto target = std::filesystem::path(path_);
     const auto temp = available_sibling_path(target, ".tmp");
 
-    std::ofstream out(temp);
+    std::ofstream out(temp, std::ios::binary);
     if (!out) {
         throw std::runtime_error("failed to open temporary face database for writing: " + temp.string());
     }
-    out << json.dump(2) << '\n';
+    out << encrypted_json;
     out.close();
     if (!out) {
         std::filesystem::remove(temp);

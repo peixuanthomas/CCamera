@@ -25,6 +25,7 @@ if (CCAMERA_STARTUP_MODE STREQUAL "missing_model")
   "detector_model": "models/missing-default-detector.onnx",
   "recognizer_model": "models/missing-default-recognizer.onnx",
   "database_path": "@DATABASE_PATH@",
+  "database_passphrase": "startup-probe-local-database-passphrase",
   "inference_backend": "opencv_zoo",
   "detection_interval": 3,
   "detection_threshold": 0.7,
@@ -64,6 +65,7 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
   "detector_model": "@DETECTOR_MODEL@",
   "recognizer_model": "@RECOGNIZER_MODEL@",
   "database_path": "@DATABASE_PATH@",
+  "database_passphrase": "startup-probe-local-database-passphrase",
   "inference_backend": "onnxruntime_cpu",
   "detection_interval": 3,
   "detection_threshold": 0.7,
@@ -79,6 +81,48 @@ if (CCAMERA_STARTUP_MODE STREQUAL "runtime")
     string(REPLACE "@RECOGNIZER_MODEL@" "${_recognizer_model_json}" _config_json "${_config_json}")
     string(REPLACE "@DATABASE_PATH@" "${_database_path_json}" _config_json "${_config_json}")
     file(WRITE "${_config_file}" "${_config_json}")
+endif()
+
+if (CCAMERA_STARTUP_MODE STREQUAL "default_runtime")
+    if (NOT DEFINED CCAMERA_STARTUP_PROBE_DIR)
+        message(FATAL_ERROR "CCAMERA_STARTUP_PROBE_DIR is required for default_runtime startup mode")
+    endif()
+
+    get_filename_component(_source_config_dir "${CCAMERA_CONFIG_FILE}" DIRECTORY)
+    get_filename_component(_source_root "${_source_config_dir}" DIRECTORY)
+    file(REMOVE_RECURSE "${CCAMERA_STARTUP_PROBE_DIR}")
+    file(MAKE_DIRECTORY "${CCAMERA_STARTUP_PROBE_DIR}/config")
+    set(_detector_model "${_source_root}/models/opencv_zoo/face_detection_yunet_2023mar.onnx")
+    set(_recognizer_model "${_source_root}/models/opencv_zoo/face_recognition_sface_2021dec.onnx")
+    set(_database_path "${CCAMERA_STARTUP_PROBE_DIR}/data/face_db.json")
+    set(_default_config_file "${CCAMERA_STARTUP_PROBE_DIR}/config/app.example.json")
+    file(TO_CMAKE_PATH "${_detector_model}" _detector_model_json)
+    file(TO_CMAKE_PATH "${_recognizer_model}" _recognizer_model_json)
+    file(TO_CMAKE_PATH "${_database_path}" _database_path_json)
+    file(WRITE "${_default_config_file}" [=[
+{
+  "camera_index": 0,
+  "frame_width": 1280,
+  "frame_height": 720,
+  "detector_model": "@DETECTOR_MODEL@",
+  "recognizer_model": "@RECOGNIZER_MODEL@",
+  "database_path": "@DATABASE_PATH@",
+  "database_passphrase": "startup-probe-local-database-passphrase",
+  "inference_backend": "opencv_zoo",
+  "detection_interval": 3,
+  "detection_threshold": 0.7,
+  "recognition_threshold": 0.45,
+  "enrollment_consistency_threshold": 0.55,
+  "enrollment_sample_count": 15,
+  "enrollment_timeout_seconds": 20,
+  "feature_worker_count": 2
+}
+]=])
+    file(READ "${_default_config_file}" _config_json)
+    string(REPLACE "@DETECTOR_MODEL@" "${_detector_model_json}" _config_json "${_config_json}")
+    string(REPLACE "@RECOGNIZER_MODEL@" "${_recognizer_model_json}" _config_json "${_config_json}")
+    string(REPLACE "@DATABASE_PATH@" "${_database_path_json}" _config_json "${_config_json}")
+    file(WRITE "${_default_config_file}" "${_config_json}")
 endif()
 
 set(_startup_args --config "${_config_file}")
